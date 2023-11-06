@@ -28,4 +28,120 @@
         <tag>Keep</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Hexo部署个人网站至github</title>
+    <url>/2023/11/05/Hexo%E9%83%A8%E7%BD%B2%E4%B8%AA%E4%BA%BA%E7%BD%91%E7%AB%99%E8%87%B3github/</url>
+    <content><![CDATA[<h2 id="需要的工具："><a href="#需要的工具：" class="headerlink" title="需要的工具："></a>需要的工具：</h2><p>​	node.js hexo</p>
+<p>​	git github</p>
+<h2 id="步骤："><a href="#步骤：" class="headerlink" title="步骤："></a>步骤：</h2><h3 id="1-下载node-js、git，-注册github账户"><a href="#1-下载node-js、git，-注册github账户" class="headerlink" title="1.下载node.js、git， 注册github账户"></a>1.下载node.js、git， 注册github账户</h3><p>node.js:<a class="link"   href="https://nodejs.org/en" >https://nodejs.org/en<i class="fas fa-external-link-alt"></i></a></p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105195727340.png"
+                      alt="image-20231105195727340"
+                ></p>
+<p>git:<a class="link"   href="https://git-scm.com/download/win" >https://git-scm.com/download/win<i class="fas fa-external-link-alt"></i></a></p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105195842189.png"
+                      alt="image-20231105195842189"
+                ></p>
+<p>注册github账户：<a class="link"   href="https://github.com/" >https://github.com/<i class="fas fa-external-link-alt"></i></a></p>
+<h3 id="2-下载hexo"><a href="#2-下载hexo" class="headerlink" title="2.下载hexo"></a>2.下载hexo</h3><p>参考文档：<a class="link"   href="https://hexo.io/zh-cn/docs/" >https://hexo.io/zh-cn/docs/<i class="fas fa-external-link-alt"></i></a></p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105200313670.png"
+                      alt="image-20231105200313670"
+                ></p>
+<p>npm是node.js自带的包管理器</p>
+<h3 id="3-建立网站文件夹"><a href="#3-建立网站文件夹" class="headerlink" title="3.建立网站文件夹"></a>3.建立网站文件夹</h3><p>首先在windows上创建一个文件夹，右键复制文件地址</p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105201213603.png"
+                      alt="image-20231105201213603"
+                ></p>
+<p>接下来powershell运行<code>hexo init 复制的文件地址</code>如下</p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105200814867.png"
+                      alt="image-20231105200814867"
+                ></p>
+<p>接下来powershell运行<code>cd 复制的文件地址</code></p>
+<p>最后powershell运行 <code> npm install</code></p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105201242658.png"
+                      alt="image-20231105201242658"
+                ></p>
+<h3 id="4-测试本地部署"><a href="#4-测试本地部署" class="headerlink" title="4.测试本地部署"></a>4.测试本地部署</h3><p>先运行<code>hexo deploy</code>再运行<code>hexo server</code></p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105201611397.png"
+                      alt="image-20231105201611397"
+                ></p>
+<p>这里不要关闭powershell，在浏览器里输入 <code>localhost:4000</code> 可以看到默认网页</p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105201822004.png"
+                      alt="image-20231105201822004"
+                ></p>
+<h3 id="5-部署到github"><a href="#5-部署到github" class="headerlink" title="5.部署到github"></a>5.部署到github</h3><h4 id="5-1-首先在github上新建repository"><a href="#5-1-首先在github上新建repository" class="headerlink" title="5.1 首先在github上新建repository"></a>5.1 首先在github上新建repository</h4><p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105202457906.png"
+                      alt="image-20231105202457906"
+                ></p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105202246817.png"
+                      alt="image-20231105202246817"
+                ></p>
+<p>划红线处必须修改为 github用户名.github.io 的形式，然后点击右下角Create repository</p>
+<h4 id="5-2-修改配置文件"><a href="#5-2-修改配置文件" class="headerlink" title="5.2 修改配置文件"></a>5.2 修改配置文件</h4><p>首先修改刚才新建文件中的配置文件_config.yml</p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105201924002.png"
+                      alt="image-20231105201924002"
+                ></p>
+<p>拉到最底下修改deploy: 后几行为</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  type: git</span><br><span class="line">  repo: https://github.com/此处为你的github用户名/此处为刚才创建的仓库名</span><br><span class="line">  # example, https://github.com/hexojs/hexojs.github.io</span><br><span class="line">  branch: gh-pages</span><br></pre></td></tr></table></figure>
+
+<h4 id="5-3部署"><a href="#5-3部署" class="headerlink" title="5.3部署"></a>5.3部署</h4><p>powershell x运行<code>cd 新建的网站文件夹</code> </p>
+<p>再运行<code>npm install hexo-deployer-git --save</code>安装hexo-deployer-git</p>
+<p>然后运行<code>hexo clean</code></p>
+<p>再运行<code>hexo deploy</code></p>
+<p>在弹出的窗口中选择网页登录github账号即可</p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105204434821.png"
+                      alt="image-20231105204434821"
+                ></p>
+<p>接下来访问 github用户名.github.io 即可看到网页（若未显示则可能要等几分钟再访问）</p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105204705905.png"
+                      alt="image-20231105204705905"
+                ></p>
+<h3 id="6-发表新的推文"><a href="#6-发表新的推文" class="headerlink" title="6.发表新的推文"></a>6.发表新的推文</h3><p>同样powershell先<code>cd 创建的网站文件夹</code> 再输入<code>hexo new post 推文标题</code></p>
+<p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/image-20231105204954918.png"
+                      alt="image-20231105204954918"
+                ></p>
+<p>然后去紫色文件地址里找 推文标题.md 文件修改即可,修改完成后重复5.3步骤即可更新界面</p>
+<p>在文章中插入图片参考<a class="link"   href="https://juejin.cn/post/6882619951857811469" >https://juejin.cn/post/6882619951857811469<i class="fas fa-external-link-alt"></i></a></p>
+]]></content>
+  </entry>
 </search>
