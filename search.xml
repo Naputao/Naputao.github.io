@@ -146,6 +146,60 @@
   </entry>
   <entry>
     <title></title>
+    <url>/2023/11/14/%E9%93%BE%E5%BC%8F%E5%89%8D%E5%90%91%E6%98%9F/</url>
+    <content><![CDATA[<h1 id="链式前向星"><a href="#链式前向星" class="headerlink" title="链式前向星"></a>链式前向星</h1><h2 id="点-node"><a href="#点-node" class="headerlink" title="点(node)"></a>点(node)</h2><h3 id="数据结构："><a href="#数据结构：" class="headerlink" title="数据结构："></a>数据结构：</h3><table>
+<thead>
+<tr>
+<th>属性名</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>headedge</td>
+<td>头一条边。节点的多条边通过链表储存，该值为链表的头位置。</td>
+</tr>
+<tr>
+<td>nodevalue</td>
+<td>节点权值。</td>
+</tr>
+<tr>
+<td>visited</td>
+<td>是否访问过。用于防止dfs,bfs访问时走重复的路陷入死循环。</td>
+</tr>
+</tbody></table>
+<h2 id="边-edge"><a href="#边-edge" class="headerlink" title="边(edge)"></a>边(edge)</h2><p>不准确，确切为“边的链表”。</p>
+<h3 id="数据结构：-1"><a href="#数据结构：-1" class="headerlink" title="数据结构："></a>数据结构：</h3><table>
+<thead>
+<tr>
+<th>属性名</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>nextedge</td>
+<td>下一条边。节点的多条边通过链表储存，该值为链表的下一条边。</td>
+</tr>
+<tr>
+<td>tonode</td>
+<td>指向节点。该条边指向的节点。</td>
+</tr>
+<tr>
+<td>edgeweight</td>
+<td>边权值。</td>
+</tr>
+</tbody></table>
+<h2 id="图解："><a href="#图解：" class="headerlink" title="图解："></a>图解：</h2><p><img  
+                     lazyload
+                     alt="image"
+                     data-src="/"
+                      alt="待补充"
+                ></p>
+<h2 id="代码如下"><a href="#代码如下" class="headerlink" title="代码如下"></a>代码如下</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stack&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EDGECNT 100</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NODECNT 50</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NULLNODE -1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NULLEDGE -1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NULLWEIGHT 0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NULLVALUE 0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NOTVISITED 0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> VISITED 1</span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="type">int</span> nextedge[EDGECNT];</span><br><span class="line"><span class="type">int</span> tonode[EDGECNT];</span><br><span class="line"><span class="type">int</span> edgeweight[EDGECNT];</span><br><span class="line"><span class="type">int</span> pedge;</span><br><span class="line"><span class="type">int</span> headedge[NODECNT];</span><br><span class="line"><span class="type">int</span> nodevalue[NODECNT];</span><br><span class="line"><span class="type">int</span> visited[NODECNT];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line">    pedge=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;EDGECNT;i++)&#123;</span><br><span class="line">        nextedge[i]=NULLEDGE;</span><br><span class="line">        tonode[i]=NULLNODE;</span><br><span class="line">        edgeweight[i]=NULLWEIGHT;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;NODECNT;i++)&#123;</span><br><span class="line">        headedge[i]=NULLEDGE;</span><br><span class="line">        nodevalue[i]=NULLVALUE;</span><br><span class="line">        visited[i]=NOTVISITED;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">CreateEdge</span><span class="params">(<span class="type">int</span> node,<span class="type">int</span> conode,<span class="type">int</span> weight = NULLWEIGHT,<span class="type">int</span> value = NULLVALUE)</span></span>&#123;</span><br><span class="line">    nextedge[pedge]=headedge[node];</span><br><span class="line">    tonode[pedge]=conode;</span><br><span class="line">    edgeweight[pedge]=weight;</span><br><span class="line">    headedge[node]=pedge;</span><br><span class="line">    nodevalue[node]=value;</span><br><span class="line">    ++pedge;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">CreateGraph</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="built_in">CreateEdge</span>(<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">    <span class="built_in">CreateEdge</span>(<span class="number">2</span>,<span class="number">3</span>);</span><br><span class="line">    <span class="built_in">CreateEdge</span>(<span class="number">2</span>,<span class="number">4</span>);</span><br><span class="line">    <span class="built_in">CreateEdge</span>(<span class="number">3</span>,<span class="number">5</span>);</span><br><span class="line">    <span class="built_in">CreateEdge</span>(<span class="number">4</span>,<span class="number">6</span>);</span><br><span class="line">    <span class="built_in">CreateEdge</span>(<span class="number">4</span>,<span class="number">7</span>);</span><br><span class="line">    <span class="built_in">CreateEdge</span>(<span class="number">7</span>,<span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">dfs</span><span class="params">(<span class="type">int</span> start)</span></span>&#123;</span><br><span class="line">    <span class="type">int</span> now = start;</span><br><span class="line">    stack&lt;<span class="type">int</span>&gt; s;</span><br><span class="line">    s.<span class="built_in">push</span>(start);</span><br><span class="line">    <span class="keyword">while</span>(now!=NULLNODE&amp;&amp;!s.<span class="built_in">empty</span>())&#123;</span><br><span class="line">        now=s.<span class="built_in">top</span>();</span><br><span class="line">        s.<span class="built_in">pop</span>();</span><br><span class="line">        <span class="keyword">if</span>(visited[now]==VISITED)<span class="keyword">continue</span>;</span><br><span class="line">        visited[now]=VISITED;</span><br><span class="line">        cout&lt;&lt;now&lt;&lt;<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">        <span class="type">int</span> p=headedge[now];</span><br><span class="line">        <span class="keyword">while</span>(p!=NULLEDGE)&#123;</span><br><span class="line">            s.<span class="built_in">push</span>(tonode[p]);</span><br><span class="line">            p=nextedge[p];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="built_in">init</span>();</span><br><span class="line">    <span class="built_in">CreateGraph</span>();</span><br><span class="line">    <span class="built_in">dfs</span>(<span class="number">1</span>);</span><br><span class="line">    cout&lt;&lt;<span class="string">&quot;END&quot;</span>&lt;&lt;endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+]]></content>
+  </entry>
+  <entry>
+    <title></title>
     <url>/2023/11/13/%E8%BD%AF%E4%BB%B6%E6%B8%85%E5%8D%95&amp;%E4%BB%8B%E7%BB%8D/</url>
     <content><![CDATA[<h1 id="GNU"><a href="#GNU" class="headerlink" title="GNU"></a><a class="link"   href="https://www.gnu.org/software/software.html" >GNU<i class="fas fa-external-link-alt"></i></a></h1><p>GNU是一个100%由自由软件构成的操作系统。它由 Richard Stallman（rms）在1983年发起，并由许多珍视软件用户自由的人士共同协作开发。技术上，GNU大致类似Unix。但是和Unix不同，GNU给予其用户自由。</p>
 <p>GNU系统包括所有<a class="link"   href="https://www.gnu.org/philosophy/categories.html#GNUsoftware" >正式的GNU软件包<i class="fas fa-external-link-alt"></i></a>（列表如下），还包括非GNU的自由软件，其中有著名的TeX和X Window系统。另外，GNU系统并非是一个单一的静态软件集合；用户和发布者可以根据他们的需要选择不同的软件包。这些仍然是GNU系统的一种变形。</p>
