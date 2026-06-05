@@ -12,6 +12,8 @@ function initCopyrightInfoHelper() {
     copyCopyrightInfo() {
       const cicDom = document.querySelector('.copyright-info-content')
       const copyDom = document.querySelector('.copy-copyright-info')
+      if (!cicDom || !copyDom) return
+
       const copyIcon = copyDom.querySelector('i')
 
       const ccLang = KEEP.language_copy_copyright
@@ -31,8 +33,10 @@ function initCopyrightInfoHelper() {
 
       copyDom.addEventListener('click', () => {
         if (!isCopied) {
-          const author = cicDom.querySelector('.post-author .content').innerHTML
-          const link = cicDom.querySelector('.post-link').innerHTML
+          const author = cicDom.querySelector('.post-author .content')?.innerHTML
+          const link = cicDom.querySelector('.post-link')?.innerHTML
+          if (!author || !link) return
+
           const tgtTxt = `${ccLang.author}${colon}${author}\n${ccLang.link}${colon}${link}`
           navigator.clipboard.writeText(tgtTxt).then(() => {
             setCopyDomContent('fa-copy', 'fa-check', ccLang.copied, true)
