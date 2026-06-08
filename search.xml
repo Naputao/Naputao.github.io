@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>GPU 架构详解：从 Warp、SM 与 Memory Hierarchy 到 Tensor Core 的执行路径</title>
+    <url>/2026/06/08/gpu-architecture-deep-dive/</url>
+    <content><![CDATA[<div class="article-summary-box">
+    <p>这篇文章从整芯片视角、SM 内部结构、warp 调度、Memory Hierarchy 与 Tensor Core 五个层次拆解现代 GPU，重点解释它为什么快、快在哪里，以及为什么性能常被访存与资源占用限制。</p>
+</div>
+<h2 id="cpu-vs-gpu"><a href="#cpu-vs-gpu" class="headerlink" title="为什么 CPU 思路无法直接解释 GPU"></a>为什么 CPU 思路无法直接解释 GPU</h2>
+<p>CPU 追求的是低延迟与强单线程性能，而 GPU 的设计目标是高吞吐：它通过大量并行线程、复制执行资源与快速切换 ready warp 来隐藏访存等待。</p>
+<h2 id="chip-view"><a href="#chip-view" class="headerlink" title="从全芯片视角看 GPU"></a>从全芯片视角看 GPU</h2>
+<p>把 GPU 看成由前端、多个 SM 集群、统一 L2 与外部 HBM/GDDR 构成的吞吐机器，会比“很多核心拼在一起”更接近真实硬件。</p>
+<h2 id="inside-sm"><a href="#inside-sm" class="headerlink" title="SM 内部到底长什么样"></a>SM 内部到底长什么样</h2>
+<p>SM 更像围绕 warp issue 组织起来的小型并行执行系统：调度器、寄存器文件、不同执行阵列与 shared memory / L1 共同决定了真正的吞吐上限。</p>
+<h2 id="latency-hiding"><a href="#latency-hiding" class="headerlink" title="GPU 如何靠调度隐藏延迟"></a>GPU 如何靠调度隐藏延迟</h2>
+<p>GPU 的经典做法是：当前 warp 如果等数据，就把 issue 机会让给另一个 ready warp。occupancy 的价值不在于数字越高越好，而在于能否提供足够深的 warp 池去覆盖访存等待。</p>
+<h2 id="memory-hierarchy"><a href="#memory-hierarchy" class="headerlink" title="Memory Hierarchy：真正限制性能的地方"></a>Memory Hierarchy：真正限制性能的地方</h2>
+<p>寄存器、shared memory、L1、L2、HBM/GDDR 之间的延迟和带宽差异，解释了为什么 coalesced 访问、bank conflict、tile 与数据复用会直接改变吞吐表现。</p>
+<h2 id="tensor-core"><a href="#tensor-core" class="headerlink" title="Tensor Core 为什么改变了 GPU 的形态"></a>Tensor Core 为什么改变了 GPU 的形态</h2>
+<p>Tensor Core 代表 GPU 开始为矩阵乘加建立专用快车道。它不是普通 FP32 ALU 的简单复制，而是独立优化的数据流路径，这也是 AI 工作负载改变 GPU 微架构的重要标志。</p>
+<h2 id="vendor-terminology"><a href="#vendor-terminology" class="headerlink" title="哪些概念是通用 GPU 原理，哪些是 NVIDIA 术语"></a>哪些概念是通用 GPU 原理，哪些是 NVIDIA 术语</h2>
+<p>Warp 对应更通用的调度束概念，SM 对应计算簇，shared memory 对应片上 scratchpad。真正可迁移的是调度、访存层级与专用矩阵单元这些原理，而不是单个厂商的命名。</p>
+<h2 id="performance-checklist"><a href="#performance-checklist" class="headerlink" title="理解架构后应如何看性能问题"></a>理解架构后应如何看性能问题</h2>
+<p>理解 GPU 架构之后，分析性能时最好区分计算受限、带宽受限、延迟受限和资源受限四类瓶颈，而不是只看一个抽象的利用率数字。</p>
+<h2 id="source-note"><a href="#source-note" class="headerlink" title="资料来源说明"></a>资料来源说明</h2>
+<p>本文结构参考公开可获取的 GPU 架构资料与技术博客通用解释框架，但页面文字、图示与动画均为重新组织和原创表达。</p>]]></content>
+  </entry>
+  <entry>
     <title>Windows 开发环境里的 GNU 工具链：MinGW、MSYS2、Cygwin 与 POSIX</title>
     <url>/2026/06/08/windows-gnu-toolchain-guide/</url>
     <content><![CDATA[<div class="article-summary-box">

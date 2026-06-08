@@ -4731,3 +4731,528 @@ body {
     font-size: 1.6rem;
   }
 }
+
+
+.gpu-arch-hero,
+.gpu-diagram-card {
+  margin: 1.4rem 0;
+  padding: 1.35rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.97), rgba(244,248,255,0.94));
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: calc(var(--box-border-radius) + 4px);
+  box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+}
+
+.gpu-arch-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(240px, 0.8fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.gpu-arch-hero-text h2 {
+  margin: 0.45rem 0 0.8rem;
+  font-size: 2rem;
+  line-height: 1.18;
+  color: var(--text-color-1);
+  text-wrap: balance;
+}
+
+.gpu-arch-hero-text p {
+  margin: 0;
+  color: var(--text-color-3);
+  line-height: 1.9;
+}
+
+.gpu-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 0.75rem;
+  color: #0b63c9;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(11,99,201,0.1);
+  border-radius: 999px;
+}
+
+.gpu-hero-metrics {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.gpu-hero-metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 1rem;
+  background: rgba(15,23,42,0.04);
+  border: 1px solid rgba(15,23,42,0.06);
+  border-radius: calc(var(--box-border-radius) - 4px);
+}
+
+.gpu-hero-metric strong {
+  color: var(--text-color-1);
+  font-size: 1.1rem;
+}
+
+.gpu-hero-metric span,
+.gpu-diagram-header p,
+.gpu-diagram-caption,
+.gpu-panel-text,
+.gpu-sm-lane span,
+.gpu-memory-layer span,
+.gpu-chip-front-end span,
+.gpu-chip-l2 span,
+.gpu-chip-memory span,
+.gpu-tensor-core-unit span {
+  color: var(--text-color-3);
+  line-height: 1.8;
+}
+
+.gpu-diagram-header {
+  margin-bottom: 1rem;
+}
+
+.gpu-diagram-header h3 {
+  margin: 0;
+  color: var(--text-color-1);
+  font-size: 1.2rem;
+}
+
+.gpu-chip-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.gpu-sm-diagram,
+.gpu-warp-timeline,
+.gpu-memory-stack,
+.gpu-tensor-flow,
+.gpu-execution-journey {
+  position: relative;
+}
+
+.gpu-chip-front-end,
+.gpu-chip-l2,
+.gpu-chip-memory,
+.gpu-sm-lane,
+.gpu-memory-layer,
+.gpu-memory-case,
+.gpu-tensor-core-unit,
+.gpu-journey-step {
+  padding: 1rem;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: calc(var(--box-border-radius) - 4px);
+}
+
+.gpu-chip-front-end,
+.gpu-chip-l2,
+.gpu-chip-memory,
+.gpu-sm-lane strong,
+.gpu-memory-layer strong,
+.gpu-memory-case h4,
+.gpu-tensor-core-unit,
+.gpu-journey-step {
+  color: var(--text-color-1);
+}
+
+.gpu-chip-front-end,
+.gpu-chip-l2,
+.gpu-chip-memory {
+  text-align: center;
+  font-weight: 700;
+}
+
+.gpu-chip-clusters,
+.gpu-sm-controls,
+.gpu-memory-compare,
+.gpu-tensor-pipeline,
+.gpu-journey-steps {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.gpu-chip-clusters {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gpu-chip-cluster,
+.gpu-sm-controls button {
+  min-height: 54px;
+  padding: 0.8rem 0.9rem;
+  color: var(--text-color-2);
+  font-weight: 700;
+  text-align: left;
+  background: rgba(15,23,42,0.04);
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: calc(var(--box-border-radius) - 5px);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.gpu-chip-cluster:hover,
+.gpu-sm-controls button:hover,
+.gpu-chip-cluster.is-active,
+.gpu-sm-controls button.is-active {
+  transform: translateY(-2px);
+  color: #0b63c9;
+  background: rgba(11,99,201,0.08);
+  border-color: rgba(11,99,201,0.2);
+  box-shadow: 0 12px 26px rgba(11,99,201,0.12);
+}
+
+.gpu-panel-copy {
+  margin-top: 0.95rem;
+}
+
+.gpu-panel-text {
+  display: none;
+  padding: 0.95rem 1rem;
+  background: rgba(0,102,204,0.06);
+  border: 1px solid rgba(0,102,204,0.12);
+  border-radius: calc(var(--box-border-radius) - 5px);
+}
+
+.gpu-panel-text.is-active {
+  display: block;
+}
+
+.gpu-sm-controls {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0.85rem;
+}
+
+.gpu-sm-lanes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.gpu-sm-lane {
+  position: relative;
+  overflow: hidden;
+}
+
+.gpu-sm-lane::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(11,99,201,0.1), rgba(11,99,201,0.65), rgba(11,99,201,0.1));
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.gpu-sm-lane.is-active::after {
+  opacity: 1;
+}
+
+.gpu-warp-rows {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.gpu-warp-row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.gpu-warp-row > span {
+  color: var(--text-color-2);
+  font-weight: 700;
+}
+
+.gpu-warp-slots {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.gpu-warp-slots i {
+  display: block;
+  height: 30px;
+  background: rgba(15,23,42,0.08);
+  border-radius: 999px;
+  animation: gpuPulse 2.8s ease-in-out infinite;
+}
+
+.gpu-warp-slots .is-issue {
+  background: linear-gradient(180deg, rgba(0,102,204,0.68), rgba(0,102,204,0.95));
+}
+
+.gpu-warp-slots .is-stall {
+  background: linear-gradient(180deg, rgba(148,163,184,0.5), rgba(100,116,139,0.9));
+}
+
+.gpu-memory-layers {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.gpu-memory-layer {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.gpu-memory-layer::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.95rem;
+  width: 6px;
+  height: calc(100% - 1.9rem);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(11,99,201,0.18), rgba(11,99,201,0.72));
+}
+
+.gpu-memory-compare {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.95rem;
+}
+
+.gpu-memory-case.is-good {
+  border-color: rgba(34,197,94,0.18);
+  background: rgba(34,197,94,0.06);
+}
+
+.gpu-memory-case.is-bad {
+  border-color: rgba(239,68,68,0.18);
+  background: rgba(239,68,68,0.05);
+}
+
+.gpu-tensor-pipeline {
+  grid-template-columns: minmax(0, 1fr) auto minmax(160px, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.gpu-tensor-matrix,
+.gpu-tensor-core-unit {
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gpu-tensor-matrix {
+  color: #0b63c9;
+  font-weight: 800;
+  background:
+    linear-gradient(90deg, rgba(11,99,201,0.08) 1px, transparent 1px),
+    linear-gradient(rgba(11,99,201,0.08) 1px, transparent 1px),
+    rgba(255,255,255,0.95);
+  background-size: 22px 22px;
+  border: 1px solid rgba(11,99,201,0.16);
+  border-radius: calc(var(--box-border-radius) - 2px);
+  animation: gpuMatrixShift 3.2s linear infinite;
+}
+
+.gpu-tensor-matrix-alt {
+  animation-delay: 0.8s;
+}
+
+.gpu-tensor-core-unit {
+  background: linear-gradient(180deg, rgba(0,102,204,0.12), rgba(0,102,204,0.2));
+  border-color: rgba(11,99,201,0.22);
+  font-weight: 800;
+}
+
+.gpu-tensor-arrow {
+  color: #0b63c9;
+  font-size: 1.2rem;
+}
+
+.gpu-journey-steps {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.gpu-journey-step {
+  position: relative;
+  text-align: center;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.gpu-journey-step.is-active {
+  transform: translateY(-2px);
+  background: rgba(11,99,201,0.08);
+  border-color: rgba(11,99,201,0.18);
+  box-shadow: 0 12px 24px rgba(11,99,201,0.14);
+}
+
+.gpu-diagram-caption {
+  margin-top: 0.9rem;
+}
+
+.gpu-journey-toggle {
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.9rem;
+  color: #0b63c9;
+  font-weight: 700;
+  background: rgba(11,99,201,0.08);
+  border: 1px solid rgba(11,99,201,0.16);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.gpu-journey-toggle:disabled {
+  color: var(--text-color-3);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+@keyframes gpuPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scaleY(0.88);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes gpuMatrixShift {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(8px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.dark-mode .gpu-arch-hero,
+.dark-mode .gpu-diagram-card {
+  background: linear-gradient(180deg, rgba(17,24,39,0.94), rgba(15,23,42,0.92));
+  border-color: rgba(148,163,184,0.14);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.3);
+}
+
+.dark-mode .gpu-hero-metric,
+.dark-mode .gpu-chip-front-end,
+.dark-mode .gpu-chip-l2,
+.dark-mode .gpu-chip-memory,
+.dark-mode .gpu-sm-lane,
+.dark-mode .gpu-memory-layer,
+.dark-mode .gpu-memory-case,
+.dark-mode .gpu-tensor-core-unit,
+.dark-mode .gpu-journey-step,
+.dark-mode .gpu-tensor-matrix {
+  background: rgba(30,41,59,0.88);
+  border-color: rgba(148,163,184,0.14);
+}
+
+.dark-mode .gpu-chip-cluster,
+.dark-mode .gpu-sm-controls button {
+  background: rgba(30,41,59,0.72);
+  border-color: rgba(148,163,184,0.14);
+}
+
+.dark-mode .gpu-panel-text {
+  background: rgba(30,64,175,0.14);
+  border-color: rgba(96,165,250,0.22);
+}
+
+.dark-mode .gpu-journey-toggle {
+  background: rgba(30,64,175,0.16);
+  border-color: rgba(96,165,250,0.22);
+}
+
+.dark-mode .gpu-memory-case.is-good {
+  background: rgba(34,197,94,0.12);
+  border-color: rgba(74,222,128,0.18);
+}
+
+.dark-mode .gpu-memory-case.is-bad {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(248,113,113,0.18);
+}
+
+.dark-mode .gpu-warp-slots i {
+  background: rgba(148,163,184,0.22);
+}
+
+.dark-mode .gpu-warp-slots .is-issue {
+  background: linear-gradient(180deg, rgba(96,165,250,0.6), rgba(59,130,246,0.95));
+}
+
+.dark-mode .gpu-warp-slots .is-stall {
+  background: linear-gradient(180deg, rgba(100,116,139,0.42), rgba(71,85,105,0.88));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gpu-warp-slots i,
+  .gpu-tensor-matrix {
+    animation: none !important;
+  }
+
+  .gpu-chip-cluster,
+  .gpu-sm-controls button,
+  .gpu-journey-step,
+  .gpu-diagram-card {
+    transition: none !important;
+  }
+
+  .gpu-chip-cluster:hover,
+  .gpu-sm-controls button:hover,
+  .gpu-chip-cluster.is-active,
+  .gpu-sm-controls button.is-active,
+  .gpu-journey-step.is-active {
+    transform: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .gpu-arch-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .gpu-sm-controls,
+  .gpu-sm-lanes,
+  .gpu-journey-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gpu-tensor-pipeline {
+    grid-template-columns: 1fr;
+  }
+
+  .gpu-tensor-arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+}
+
+@media (max-width: 800px) {
+  .gpu-chip-clusters,
+  .gpu-sm-controls,
+  .gpu-sm-lanes,
+  .gpu-memory-compare,
+  .gpu-journey-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .gpu-diagram-card,
+  .gpu-arch-hero {
+    padding: 1rem;
+  }
+
+  .gpu-warp-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gpu-warp-slots {
+    gap: 0.4rem;
+  }
+}

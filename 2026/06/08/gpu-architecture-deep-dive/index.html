@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Naputao Blog">
+    <meta name="description" content="一篇系统拆解现代 GPU 架构的深度长文，从 Warp、SM、访存层级一直讲到 Tensor Core 的执行路径与性能含义。">
+    <meta name="author" content="Naputao">
+    
+    <title>
+        
+            GPU 架构详解：从 Warp、SM 与 Memory Hierarchy 到 Tensor Core 的执行路径 |
+        
+        Naputao
+    </title>
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    
+        <link rel="shortcut icon" href="/images/logo.svg">
+    
+    
+<link rel="stylesheet" href="/font/css/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/font/css/regular.min.css">
+
+    
+<link rel="stylesheet" href="/font/css/solid.min.css">
+
+    
+<link rel="stylesheet" href="/font/css/brands.min.css">
+
+    
+    <script class="keep-theme-configurations">
+    const KEEP = window.KEEP || {}
+    KEEP.hexo_config = {"hostname":"naputao.github.io","root":"/","language":"en","path":"search.xml"}
+    KEEP.theme_config = {"toc":{"enable":true,"number":true,"expand_all":true,"init_open":true,"layout":"right"},"style":{"primary_color":"#0066cc","logo":"/images/logo.svg","favicon":"/images/logo.svg","avatar":"/images/avatar.svg","first_screen":{"enable":false,"background_img":"/images/bg.svg","description":"Keep coding and keep sharing.","hitokoto":false},"scroll":{"progress_bar":false,"percent":true}},"local_search":{"enable":true,"preload":true},"code_block":{"tools":{"enable":true,"style":"default"},"highlight_theme":"default"},"pjax":{"enable":true},"lazyload":{"enable":true},"comment":{"enable":false,"use":"valine","valine":{"appid":null,"appkey":null,"server_urls":null,"placeholder":null},"gitalk":{"github_id":null,"github_admins":null,"repository":null,"client_id":null,"client_secret":null,"proxy":null},"twikoo":{"env_id":null,"region":null,"version":"1.6.21"},"waline":{"server_url":null,"reaction":false,"version":2},"giscus":{"repo":null,"repo_id":null,"category":"Announcements","category_id":null,"reactions_enabled":false}},"post":{"author_label":{"enable":true,"auto":true,"custom_label_list":["Trainee","Engineer","Architect"]},"word_count":{"wordcount":true,"min2read":true},"datetime_format":"YYYY-MM-DD HH:mm:ss","copyright_info":true,"share":true,"reward":{"enable":false,"img_link":null,"text":null}},"website_count":{"busuanzi_count":{"enable":true,"site_uv":true,"site_pv":true,"page_pv":true}},"version":"3.8.6"}
+    KEEP.language_ago = {"second":"%s seconds ago","minute":"%s minutes ago","hour":"%s hours ago","day":"%s days ago","week":"%s weeks ago","month":"%s months ago","year":"%s years ago"}
+    KEEP.language_code_block = {"copy":"Copy code","copied":"Copied","fold":"Fold code block","folded":"Folded"}
+    KEEP.language_copy_copyright = {"copy":"Copy copyright info","copied":"Copied","title":"Original article title","author":"Original article author","link":"Original article link"}
+  </script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+<div class="progress-bar-container">
+    
+
+    
+        <span class="pjax-progress-bar"></span>
+        <i class="pjax-progress-icon fas fa-circle-notch fa-spin"></i>
+    
+</div>
+
+
+<main class="page-container border-box">
+
+    <!-- home first screen  -->
+    
+
+    <!-- page content -->
+    <div class="page-main-content border-box">
+        <div class="page-main-content-top">
+            
+<header class="header-wrapper">
+
+    <div class="border-box header-content">
+        <div class="left border-box">
+            
+                <a class="logo-image border-box" href="/">
+                    <img src="/images/logo.svg">
+                </a>
+            
+            <a class="site-name border-box" href="/">
+               Naputao
+            </a>
+        </div>
+
+        <div class="right border-box">
+            <div class="pc">
+                <ul class="menu-list">
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="/"
+                            >
+                                HOME
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="/archives"
+                            >
+                                ARCHIVES
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="/tags"
+                            >
+                                TAGS
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="/categories"
+                            >
+                                CATEGORIES
+                            </a>
+                        </li>
+                    
+                    
+                        <li class="menu-item search search-popup-trigger">
+                            <i class="fas fa-search"></i>
+                        </li>
+                    
+                </ul>
+            </div>
+            <div class="mobile">
+                
+                    <div class="icon-item search search-popup-trigger"><i class="fas fa-search"></i></div>
+                
+                <div class="icon-item menu-bar">
+                    <div class="menu-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-drawer">
+        <ul class="drawer-menu-list">
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="/">HOME</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="/archives">ARCHIVES</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="/tags">TAGS</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="/categories">CATEGORIES</a>
+                </li>
+            
+        </ul>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+        </div>
+
+        <div class="page-main-content-middle border-box">
+
+            <div class="main-content border-box">
+
+                
+
+                    <div class="fade-in-down-animation">
+    <div class="post-page-container border-box">
+
+        <div class="article-content-container border-box">
+
+            
+
+            <div class="article-content-bottom border-box">
+                
+                    <h1 class="article-title">
+                        GPU 架构详解：从 Warp、SM 与 Memory Hierarchy 到 Tensor Core 的执行路径
+                    </h1>
+                
+
+                
+                    <div class="article-header border-box">
+                        
+                            <div class="avatar-box border-box">
+                                <img src="/images/avatar.svg">
+                            </div>
+                        
+                        <div class="info-box">
+                            <div class="author">
+                                <span class="name">Naputao</span>
+                                
+                                    <span class="author-label">Lv1</span>
+                                
+                            </div>
+                            <div class="meta-info border-box">
+                                
+
+<div class="article-meta-info-container border-box post">
+    <div class="article-meta-info border-box">
+        
+
+
+        
+            <span class="meta-info-item article-create-date">
+                <i class="icon fa-solid fa-calendar-check"></i>&nbsp;
+                <span class="pc">2026-06-08 18:30:00</span>
+                <span class="mobile">2026-06-08 18:30</span>
+            </span>
+
+            <span class="meta-info-item article-update-date">
+                <i class="icon fa-solid fa-file-pen"></i>&nbsp;
+                <span class="pc" data-updated="Sun Jun 08 2026 18:30:00 GMT+0800">2026-06-08 18:30:00</span>
+            </span>
+        
+
+        
+
+        
+
+        
+        
+            <span class="meta-info-item article-wordcount">
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>4280 Words</span>
+            </span>
+        
+        
+            <span class="meta-info-item article-min2read">
+                <i class="icon fas fa-clock"></i>&nbsp;<span>14 Mins</span>
+            </span>
+        
+        
+            <span class="meta-info-item article-pv">
+                <i class="icon fas fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+            </span>
+        
+    </div>
+
+    
+</div>
+
+                            </div>
+                        </div>
+                    </div>
+                
+
+                <div class="article-content keep-markdown-body">
+                    
+
+                    <div class="gpu-arch-hero">
+    <div class="gpu-arch-hero-text">
+        <span class="gpu-hero-badge"><i class="fas fa-microchip"></i>&nbsp;Architecture Deep Dive</span>
+        <h2>把 GPU 当成吞吐机器，而不是“更多核心的 CPU”</h2>
+        <p>很多关于 GPU 的介绍停留在“并行更多、算得更快”这类结论上，但真正决定现代 GPU 形态的，是它如何组织线程、如何调度 warp、如何布置片上资源，以及如何用 memory hierarchy 把带宽和延迟拆成可管理的问题。下面这篇文章按整芯片 → SM → 调度 → 访存 → Tensor Core 的顺序，一层层把它拆开。</p>
+    </div>
+    <div class="gpu-hero-metrics">
+        <div class="gpu-hero-metric"><strong>5 组</strong><span>原创动画示意</span></div>
+        <div class="gpu-hero-metric"><strong>10 节</strong><span>体系结构主线</span></div>
+        <div class="gpu-hero-metric"><strong>NVIDIA 主线</strong><span>兼顾通用概念映射</span></div>
+    </div>
+</div>
+
+<div class="article-summary-box">
+    <p>这不是一篇 CUDA 入门，也不是“GPU 就是更多核心”的泛科普。本文把现代 GPU 当成一个真正的吞吐型处理器来拆开：从整芯片视角、SM 内部组织、warp 调度、访存层级，一直讲到 Tensor Core 为何会改变整条执行路径。</p>
+</div>
+
+<h2 id="cpu-vs-gpu"><a href="#cpu-vs-gpu" class="headerlink" title="为什么 CPU 思路无法直接解释 GPU"></a>为什么 CPU 思路无法直接解释 GPU</h2>
+<p><strong>先给结论：</strong>GPU 的关键不是把 ALU 数量简单堆高，而是把线程组织、资源复制和调度策略一起围绕“隐藏延迟、追求吞吐”设计出来。</p>
+<p>CPU 的目标通常是把单线程做得尽可能快：它会投入大量晶体管在复杂控制逻辑、乱序执行、分支预测、大缓存和更低延迟的执行路径上。因为 CPU 面对的是操作系统、应用逻辑、分支密集代码和不可预测访问模式，它必须在“单条控制流也要跑得很好”这件事上付出成本。</p>
+<p>GPU 走的是另一条路。它默认你有大量近似同构的工作项，可以把很多线程捆成更大的调度单位，然后在某个 warp 因为访存而等待时，立刻换到另一个已经 ready 的 warp。换句话说，CPU 更像是尽力缩短一条控制流的等待时间；GPU 更像是让等待永远被别的工作覆盖掉。</p>
+<p>因此，理解 GPU 时最忌讳的误区就是把它想成“更多核心的 CPU”。更准确的理解是：它是一台把计算阵列、资源复制、线程批调度、片上 scratchpad 和高带宽显存系统拼在一起的吞吐机器。</p>
+
+<h2 id="chip-view"><a href="#chip-view" class="headerlink" title="从全芯片视角看 GPU"></a>从全芯片视角看 GPU</h2>
+<p>如果只盯着某个 SM 或某条指令，很容易丢掉全局视角。更好的起点是先看整颗芯片：前端负责接收 kernel 与指令流；中间是大量计算簇和 SM；下方是统一的 L2；最外层才是 HBM / GDDR 与 memory controller。这个分层直接决定了 GPU 为什么擅长吞吐，却也经常被带宽与访存模式锁死。</p>
+
+<section class="gpu-diagram-card gpu-chip-overview" aria-labelledby="gpu-chip-title">
+  <div class="gpu-diagram-header">
+    <h3 id="gpu-chip-title">动画示意 1：GPU 全芯片鸟瞰图</h3>
+    <p>把前端、SM 集群、L2 与显存控制器放到同一张图里看。</p>
+  </div>
+  <div class="gpu-chip-grid">
+    <div class="gpu-chip-front-end">Front End<br><span>Kernel launch · fetch · dispatch</span></div>
+    <div class="gpu-chip-clusters" role="group" aria-label="GPU 计算簇选择">
+      <button type="button" class="gpu-chip-cluster is-active" data-gpu-panel="chip-a" aria-pressed="true" aria-controls="gpu-chip-copy-a">GPC / SM Cluster A</button>
+      <button type="button" class="gpu-chip-cluster" data-gpu-panel="chip-b" aria-pressed="false" aria-controls="gpu-chip-copy-b">GPC / SM Cluster B</button>
+      <button type="button" class="gpu-chip-cluster" data-gpu-panel="chip-c" aria-pressed="false" aria-controls="gpu-chip-copy-c">GPC / SM Cluster C</button>
+      <button type="button" class="gpu-chip-cluster" data-gpu-panel="chip-d" aria-pressed="false" aria-controls="gpu-chip-copy-d">GPC / SM Cluster D</button>
+    </div>
+    <div class="gpu-chip-l2">Unified L2 Cache<br><span>跨 SM 共享的片上缓存与一致性汇合层</span></div>
+    <div class="gpu-chip-memory">HBM / GDDR Memory Controllers<br><span>片外带宽出口与真正高延迟路径</span></div>
+  </div>
+  <div class="gpu-panel-copy">
+    <div id="gpu-chip-copy-a" class="gpu-panel-text is-active" data-gpu-copy="chip-a">高亮路径表示一次典型 kernel 的执行区域：前端把 block 分派给可用 SM 集群，cluster 内部执行与访存命中优先留在片上，而 miss 才会下探到 L2 和片外显存。</div>
+    <div id="gpu-chip-copy-b" class="gpu-panel-text" data-gpu-copy="chip-b" hidden>每个 cluster 不是“单核”，而是一片可并行调度多个 warp 的执行资源区。复制这些 cluster，才是 GPU 扩展吞吐的基本方式。</div>
+    <div id="gpu-chip-copy-c" class="gpu-panel-text" data-gpu-copy="chip-c" hidden>统一 L2 让不同 SM 之间可以共享更多数据与缓存命中机会，但它同时也会成为全芯片争用点。</div>
+    <div id="gpu-chip-copy-d" class="gpu-panel-text" data-gpu-copy="chip-d" hidden>片外显存带宽很大，但延迟依旧高。GPU 真正强的地方，是让大量 warp 在等待显存时彼此掩护，而不是让某个线程单独等待得更少。</div>
+  </div>
+</section>
+
+<p>这张图里最重要的认知是：<strong>SM 只是整机中的执行岛</strong>。现代 GPU 的性能不是某个 ALU 决定的，而是前端分派、SM 资源占用、L2 压力、显存带宽、访存模式共同作用的结果。</p>
+
+<h2 id="warp-block-mapping"><a href="#warp-block-mapping" class="headerlink" title="线程、warp、block 与 kernel 的硬件映射"></a>线程、warp、block 与 kernel 的硬件映射</h2>
+<p>软件里你写的是 kernel、grid、block、thread；硬件里真正调度的却不是单个 thread，而是 warp。以 NVIDIA 语境来说，一个 warp 通常由 32 个线程组成，它们共享同一条指令流，但可在数据上分化。block 则是更大的分配单元：它决定一组线程能否一起驻留在某个 SM 上，并消耗掉该 SM 的寄存器、shared memory 与最大并发槽位。</p>
+<p>这也是为什么 block 大小不是随便填的。它既影响并行粒度，也影响资源切分。如果单个 block 占用太多寄存器或 shared memory，那么一个 SM 上能同时驻留的 block 数就会下降，随之下降的不是“线程总数”这么简单，而是可供调度器轮换隐藏延迟的 warp 池深度。</p>
+<p>更进一步说，warp 是执行单位，block 是资源绑定单位，而 kernel 只是逻辑上的一整批任务。把这三层关系分清，后面的 occupancy、调度和 bank conflict 才不会听起来像彼此无关的术语。</p>
+
+<h2 id="inside-sm"><a href="#inside-sm" class="headerlink" title="SM 内部到底长什么样"></a>SM 内部到底长什么样</h2>
+<p>SM 并不是一个大核心，它更像是一组围绕 warp issue 组织起来的小型并行执行系统：上面有 warp scheduler 与 dispatch 单元，中间挂着寄存器文件与多类执行资源，旁边连着 load/store 路径和 shared memory / L1，再往下才会走向更远的 L2 与显存。</p>
+
+<section class="gpu-diagram-card gpu-sm-diagram" aria-labelledby="gpu-sm-title">
+  <div class="gpu-diagram-header">
+    <h3 id="gpu-sm-title">动画示意 2：SM 内部结构拆解图</h3>
+    <p>点击不同区域，高亮该组件在执行路径中的职责。</p>
+  </div>
+  <div class="gpu-sm-controls" role="group" aria-label="SM 组件选择">
+    <button type="button" class="is-active" data-gpu-panel="sm-scheduler" aria-pressed="true" aria-controls="gpu-sm-copy-scheduler">Scheduler</button>
+    <button type="button" data-gpu-panel="sm-register" aria-pressed="false" aria-controls="gpu-sm-copy-register">Register File</button>
+    <button type="button" data-gpu-panel="sm-exec" aria-pressed="false" aria-controls="gpu-sm-copy-exec">Execution Units</button>
+    <button type="button" data-gpu-panel="sm-memory" aria-pressed="false" aria-controls="gpu-sm-copy-memory">Shared / L1</button>
+  </div>
+  <div class="gpu-sm-lanes">
+    <div class="gpu-sm-lane is-active" data-gpu-copy="sm-scheduler">
+      <strong>Warp Scheduler</strong>
+      <span>从 ready warp 池里挑选下一批可 issue 的 warp</span>
+    </div>
+    <div class="gpu-sm-lane" data-gpu-copy="sm-register">
+      <strong>Register File</strong>
+      <span>线程私有状态与中间值的最快存储层</span>
+    </div>
+    <div class="gpu-sm-lane" data-gpu-copy="sm-exec">
+      <strong>FP32 / INT / SFU / Tensor</strong>
+      <span>不同类型指令走向不同执行阵列</span>
+    </div>
+    <div class="gpu-sm-lane" data-gpu-copy="sm-memory">
+      <strong>Shared Memory / L1</strong>
+      <span>线程块协作与近距离数据复用的关键区域</span>
+    </div>
+  </div>
+  <div class="gpu-panel-copy">
+    <div id="gpu-sm-copy-scheduler" class="gpu-panel-text is-active" data-gpu-copy="sm-scheduler">调度器不是“算得快”的地方，而是“决定谁先算”的地方。GPU 把很多晶体管投给了并行发射与 warp 轮换，而不是 CPU 式的大规模乱序逻辑。</div>
+    <div id="gpu-sm-copy-register" class="gpu-panel-text" data-gpu-copy="sm-register" hidden>寄存器文件既是性能来源，也是 occupancy 上限的约束来源。一个线程用太多寄存器，常常比“单条指令更慢”更致命，因为它会压缩整个 SM 的驻留并发度。</div>
+    <div id="gpu-sm-copy-exec" class="gpu-panel-text" data-gpu-copy="sm-exec" hidden>现代 GPU 的执行资源不是同质的。普通标量/向量计算、地址计算、特殊函数和矩阵乘加，会走向不同阵列；这意味着瓶颈分析必须看具体指令类别，而不是只看“利用率”。</div>
+    <div id="gpu-sm-copy-memory" class="gpu-panel-text" data-gpu-copy="sm-memory" hidden>shared memory 的价值不只是“更快”，而是“更可控”。它让程序员能主动把热点数据留在片上，但也引入了 bank conflict、容量限制和同步开销。</div>
+  </div>
+</section>
+
+<p>从性能角度看，SM 内部最值得记住的不是“里面有什么模块”，而是这些模块都在争夺同一件事：<strong>让足够多的 warp 在适当时刻拿到适当资源</strong>。寄存器太多、shared memory 占用太大、访存 miss 太多，最终都会表现为调度器手里可用的 ready warp 不够。</p>
+
+<h2 id="latency-hiding"><a href="#latency-hiding" class="headerlink" title="GPU 如何靠调度隐藏延迟"></a>GPU 如何靠调度隐藏延迟</h2>
+<p>CPU 遇到 cache miss 时，往往靠乱序和 speculation 尽量填补空隙；GPU 的经典做法则更直接：当前 warp 如果等数据，就把 issue 机会让给另一个已经 ready 的 warp。只要 SM 上驻留的 warp 够多，这种切换看起来就像“延迟消失了”。</p>
+
+<section class="gpu-diagram-card gpu-warp-timeline" aria-labelledby="gpu-warp-title">
+  <div class="gpu-diagram-header">
+    <h3 id="gpu-warp-title">动画示意 3：Warp 调度与延迟隐藏</h3>
+    <p>同一个 SM 中，不同 warp 会在 issue、等待、恢复之间交替。</p>
+  </div>
+  <div class="gpu-warp-rows">
+    <div class="gpu-warp-row is-running"><span>Warp 0</span><div class="gpu-warp-slots"><i class="is-issue"></i><i></i><i class="is-stall"></i><i></i><i></i></div></div>
+    <div class="gpu-warp-row"><span>Warp 1</span><div class="gpu-warp-slots"><i></i><i class="is-issue"></i><i></i><i></i><i></i></div></div>
+    <div class="gpu-warp-row"><span>Warp 2</span><div class="gpu-warp-slots"><i></i><i></i><i class="is-issue"></i><i></i><i></i></div></div>
+    <div class="gpu-warp-row"><span>Warp 3</span><div class="gpu-warp-slots"><i></i><i></i><i></i><i class="is-issue"></i><i></i></div></div>
+  </div>
+  <div class="gpu-diagram-caption">灰色表示等待数据返回，蓝色高亮表示当前 issue。只要 ready warp 足够多，SM 就能继续推进其他工作。</div>
+</section>
+
+<p>这就是为什么 occupancy 经常被拿来讨论，但又不能神化。occupancy 的本质是“在资源约束下，SM 最多能同时驻留多少 warp / block”。它重要，是因为更深的 warp 池更有机会覆盖访存等待；但它不是最终目的。如果你的 kernel 已经被计算阵列或某个特殊资源吃满，再继续追高 occupancy 并不会自动变快。</p>
+<p>更准确的说法应该是：<strong>你需要足够的 occupancy 去支撑 latency hiding，但不需要为了数字好看而牺牲别的关键优化</strong>。很多实战里，合理的寄存器使用和更好的访存模式，比盲目把 occupancy 从 50% 堆到 100% 更有效。</p>
+
+<h2 id="memory-hierarchy"><a href="#memory-hierarchy" class="headerlink" title="Memory Hierarchy：真正限制性能的地方"></a>Memory Hierarchy：真正限制性能的地方</h2>
+<p>如果说 SM 解释了 GPU 怎么发射和执行，那么 memory hierarchy 才解释了 GPU 为什么常常跑不满。现代 GPU 的算力往往大得惊人，但寄存器、shared memory、L1、L2、HBM/GDDR 之间的延迟与带宽差异更惊人。你以为自己在写“乘加”，硬件实际上可能在花大部分时间等数据。</p>
+
+<section class="gpu-diagram-card gpu-memory-stack" aria-labelledby="gpu-memory-title">
+  <div class="gpu-diagram-header">
+    <h3 id="gpu-memory-title">动画示意 4：Memory Hierarchy 数据流图</h3>
+    <p>看同一份数据从片外进入片上，再进入寄存器的层层收敛过程。</p>
+  </div>
+  <div class="gpu-memory-layers">
+    <div class="gpu-memory-layer"><strong>Registers</strong><span>线程私有，延迟最低，容量最小</span></div>
+    <div class="gpu-memory-layer"><strong>Shared Memory</strong><span>线程块共享，可显式管理，但会受 bank 冲突影响</span></div>
+    <div class="gpu-memory-layer"><strong>L1 / Read-only Cache</strong><span>更接近执行单元的自动缓存层</span></div>
+    <div class="gpu-memory-layer"><strong>Unified L2</strong><span>全芯片共享的缓存与流量汇聚层</span></div>
+    <div class="gpu-memory-layer"><strong>HBM / GDDR</strong><span>容量大、带宽高，但延迟远高于片上资源</span></div>
+  </div>
+  <div class="gpu-memory-compare">
+    <div class="gpu-memory-case is-good">
+      <h4>Coalesced</h4>
+      <p>相邻线程访问相邻地址，控制器能把请求合并成更少、更宽的事务。</p>
+    </div>
+    <div class="gpu-memory-case is-bad">
+      <h4>Scattered</h4>
+      <p>线程访问离散地址，事务被拆散，L2 与 memory controller 压力骤增。</p>
+    </div>
+  </div>
+</section>
+
+<p>理解这张图时，最重要的性能直觉有三个。第一，<strong>寄存器和 shared memory 的价值不只是快，而是它们能把数据留在离执行单元最近的地方</strong>。第二，L2 很重要，但它不是魔法缓存；坏的访问模式会让它很快变成拥堵点。第三，片外带宽虽然很宽，但任何一次真正掉到 HBM/GDDR 的 miss，都意味着你需要靠更多 ready warp 才能把空档填平。</p>
+<p>因此，“coalescing”“bank conflict”“reuse”“tile”这些词并不只是 CUDA 教程里的技巧，它们背后对应的其实就是这张层级图里不同层之间的流量控制问题。</p>
+
+<h2 id="tensor-core"><a href="#tensor-core" class="headerlink" title="Tensor Core 为什么改变了 GPU 的形态"></a>Tensor Core 为什么改变了 GPU 的形态</h2>
+<p>现代 GPU 已经不再只是“更大的通用并行阵列”。在 AI 工作负载主导之后，矩阵乘加成了最值得专门为之修建快车道的计算模式。Tensor Core 的意义不只是让某类运算更快，而是让 GPU 的执行资源开始明显分化：一部分继续服务通用 SIMT，一部分则直接针对矩阵 tile 计算做了专用设计。</p>
+
+<section class="gpu-diagram-card gpu-tensor-flow" aria-labelledby="gpu-tensor-title">
+  <div class="gpu-diagram-header">
+    <h3 id="gpu-tensor-title">动画示意 5：Tensor Core 矩阵乘加路径</h3>
+    <p>矩阵 tile 从片上加载到专用矩阵阵列，再把部分和写回寄存器。</p>
+  </div>
+  <div class="gpu-tensor-pipeline">
+    <div class="gpu-tensor-matrix">Tile A</div>
+    <div class="gpu-tensor-arrow"><i class="fas fa-arrow-right"></i></div>
+    <div class="gpu-tensor-core-unit">Tensor Core<br><span>MMA / accumulation</span></div>
+    <div class="gpu-tensor-arrow"><i class="fas fa-arrow-right"></i></div>
+    <div class="gpu-tensor-matrix gpu-tensor-matrix-alt">Tile B / Accumulator</div>
+  </div>
+  <div class="gpu-diagram-caption">重点不是具体维度，而是这条路径说明：专用矩阵运算并不是普通 FP32 ALU 的简单复制，而是独立优化过的数据流。</div>
+</section>
+
+<p>一旦看到这一层，你就会理解为什么现代 GPU 文档越来越强调 mixed precision、tile size、tensor layout 和数据对齐。因为这类专用单元的收益取决于数据能否以它喜欢的形状和节奏被喂进去。也就是说，AI 时代的 GPU 架构演化，不只是“多加了一种指令”，而是把整个片上数据组织方式都往矩阵吞吐优化方向推了一步。</p>
+
+<h2 id="warp-journey"><a href="#warp-journey" class="headerlink" title="一个 warp 的完整执行旅程"></a>一个 warp 的完整执行旅程</h2>
+<p>前面的章节已经把零件拆开了。现在把它们重新串起来：一次 kernel launch 之后，前端先把 block 分配给有足够资源的 SM；SM 内部把线程组织成 warp；scheduler 从 ready warp 池里发出下一批指令；执行单元推进算术或地址计算；访存指令命中时快速返回，miss 时该 warp 被暂时挂起；期间其他 warp 获得发射机会；最终，当依赖消失，这个 warp 再次回到 ready 状态继续执行，直到 retire。</p>
+
+<section class="gpu-diagram-card gpu-execution-journey" aria-labelledby="gpu-journey-title">
+  <div class="gpu-diagram-header">
+    <h3 id="gpu-journey-title">总动画：一个 Warp 的执行旅程</h3>
+    <p>这张图把前面的空间结构与时间过程合并到一条执行路径里。</p>
+  </div>
+  <button type="button" class="gpu-journey-toggle" aria-pressed="false">暂停动画</button>
+  <div class="gpu-journey-steps">
+    <div class="gpu-journey-step is-active">Kernel Launch</div>
+    <div class="gpu-journey-step">Block Dispatch</div>
+    <div class="gpu-journey-step">Warp Issue</div>
+    <div class="gpu-journey-step">Execute / Address Calc</div>
+    <div class="gpu-journey-step">Memory Stall / Resume</div>
+    <div class="gpu-journey-step">Retire</div>
+  </div>
+  <div class="gpu-diagram-caption">如果把 GPU 想成一条连续流水线，最容易误解它。更贴近真实的图景是：它在很多 warp 之间交错推进，每一步都可能因为资源、依赖或访存而暂停与切换。</div>
+</section>
+
+<p>这条“旅程图”最重要的价值，是把前面所有术语从静态名词变回动态过程。warp、scheduler、register、shared memory、L2、HBM、Tensor Core，这些词不是平铺在 PPT 上的标签，而是在同一条执行生命线上轮流成为瓶颈或加速器。</p>
+
+<h2 id="vendor-terminology"><a href="#vendor-terminology" class="headerlink" title="哪些概念是通用 GPU 原理，哪些是 NVIDIA 术语"></a>哪些概念是通用 GPU 原理，哪些是 NVIDIA 术语</h2>
+<p>本文主线用了很多 NVIDIA 术语，是因为它们最常见，也最容易形成完整叙述。但把这些词直接等同于“GPU 的唯一正确说法”会带来另一种误解。更好的做法是把它们分成两层：一层是通用架构原理，一层是厂商自己的命名。</p>
+<table>
+    <thead><tr><th>NVIDIA 术语</th><th>通用理解</th><th>其他语境近似说法</th></tr></thead>
+    <tbody>
+        <tr><td>Warp</td><td>基本 SIMD/SIMT 调度束</td><td>AMD Wavefront</td></tr>
+        <tr><td>SM</td><td>流式多处理器 / 计算簇</td><td>AMD CU</td></tr>
+        <tr><td>Shared Memory</td><td>片上软件可控 scratchpad</td><td>LDS</td></tr>
+        <tr><td>Tensor Core</td><td>专用矩阵乘加单元</td><td>Matrix Core / Matrix Engine</td></tr>
+    </tbody>
+</table>
+<p>所以，真正值得记住的不是术语本身，而是它背后的约束：调度是不是按束进行、片上是否有显式 scratchpad、矩阵运算是否有专用单元、缓存层次和片外显存之间如何分工。这些问题才具有跨厂商可迁移性。</p>
+
+<h2 id="performance-checklist"><a href="#performance-checklist" class="headerlink" title="理解架构后应如何看性能问题"></a>理解架构后应如何看性能问题</h2>
+<p>理解 GPU 架构之后，看性能问题最好按四种受限模式来排查。第一种是<strong>计算受限</strong>：执行阵列已经很忙，瓶颈在算术吞吐。第二种是<strong>带宽受限</strong>：L2 或片外流量已经吃满。第三种是<strong>延迟受限</strong>：理论带宽没满，但 ready warp 不够，等待无法被完全覆盖。第四种是<strong>资源受限</strong>：寄存器、shared memory 或 block 尺寸把驻留并发度卡死了。</p>
+<p>很多优化建议其实都可以落回这四类里。调小寄存器压力，是在放宽资源受限；改成 coalesced 访问，是在缓解带宽与延迟受限；使用 shared memory tile，是在把数据从更高延迟层下拉到片上；正确喂给 Tensor Core，是在减少通用执行路径上的浪费。</p>
+<div class="article-summary-box soft">
+    <p><strong>最后一句总结：</strong>GPU 真正的强大，不在于“核心多”，而在于它把计算阵列、warp 调度、片上资源和 memory hierarchy 组织成了一台能够持续吞吐海量工作项的机器。看懂这件事，才算真正开始理解 GPU。</p>
+</div>
+<h2 id="source-note"><a href="#source-note" class="headerlink" title="资料来源说明"></a>资料来源说明</h2>
+<p>本文的结构整理参考了公开可获取的 GPU 架构白皮书、厂商文档与技术博客中的通用解释框架，但页面中的文字、图示与动画均为重新组织和原创表达，重点服务于本站“体系结构长文”的阅读体验。</p>
+
+                </div>
+
+                
+
+                <div class="post-bottom-tags-and-share border-box">
+                    <div>
+                        
+                    </div>
+                    <div>
+                        
+                            <div class="post-share-container border-box">
+    <ul class="share-list-wrap border-box">
+        <li class="qq share-item border-box flex-center tooltip"
+            data-tooltip-content="Share to QQ"
+        >
+            <i class="fa-brands fa-qq"></i>
+        </li>
+        <li class="wechat share-item border-box flex-center tooltip tooltip-img"
+            data-tooltip-content="Share to WeChat"
+            data-tooltip-img-tip="Scan by WeChat"
+            data-tooltip-img-style="background-color: #fff; top: -10px; padding: 0.6rem 0.6rem 0.1rem 0.6rem;"
+        >
+            <i class="fa-brands fa-weixin"></i>
+        </li>
+        <li class="weibo share-item border-box flex-center tooltip"
+            data-tooltip-content="Share to WeiBo"
+        >
+            <i class="fa-brands fa-weibo"></i>
+        </li>
+    </ul>
+</div>
+
+                        
+                    </div>
+                </div>
+
+                
+
+                
+                    <div class="article-nav">
+                        <div class="article-prev">
+                                <a class="prev"
+                                   rel="prev"
+                                   href="/2026/06/08/cpp-code-reading-patterns/"
+                                   title="C/C++ 代码阅读里的怪写法：宏、break 清理流与语句表达式"
+                                >
+                                            <span class="left arrow-icon flex-center">
+                                      <i class="fas fa-chevron-left"></i>
+                                    </span>
+                                    <span class="title flex-center">
+                                        <span class="post-nav-item">Previous</span>
+                                        <span class="post-nav-title-item text-ellipsis">C/C++ 代码阅读里的怪写法：宏、break 清理流与语句表达式</span>
+                                    </span>
+                                </a>
+                            </div>
+                    </div>
+                
+
+                
+
+            </div>
+        </div>
+
+        
+            <div class="pc-post-toc right-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#cpu-vs-gpu"><span class="nav-number">1.</span> <span class="nav-text">为什么 CPU 思路无法直接解释 GPU</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#chip-view"><span class="nav-number">2.</span> <span class="nav-text">从全芯片视角看 GPU</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#warp-block-mapping"><span class="nav-number">3.</span> <span class="nav-text">线程、warp、block 与 kernel 的硬件映射</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#inside-sm"><span class="nav-number">4.</span> <span class="nav-text">SM 内部到底长什么样</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#latency-hiding"><span class="nav-number">5.</span> <span class="nav-text">GPU 如何靠调度隐藏延迟</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#memory-hierarchy"><span class="nav-number">6.</span> <span class="nav-text">Memory Hierarchy：真正限制性能的地方</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#tensor-core"><span class="nav-number">7.</span> <span class="nav-text">Tensor Core 为什么改变了 GPU 的形态</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#warp-journey"><span class="nav-number">8.</span> <span class="nav-text">一个 warp 的完整执行旅程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#vendor-terminology"><span class="nav-number">9.</span> <span class="nav-text">哪些概念是通用 GPU 原理，哪些是 NVIDIA 术语</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#performance-checklist"><span class="nav-number">10.</span> <span class="nav-text">理解架构后应如何看性能问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#source-note"><span class="nav-number">11.</span> <span class="nav-text">资料来源说明</span></a></li></ol>
+    </div>
+</div>
+
+            </div>
+        
+    </div>
+</div>
+
+
+                
+            </div>
+
+        </div>
+
+        <div class="page-main-content-bottom border-box">
+            
+<footer class="footer border-box">
+    <div class="border-box website-info-box default">
+        
+            <div class="copyright-info info-item default">
+                &copy;&nbsp;<span>2020</span>&nbsp;-&nbsp;2023
+                
+                    &nbsp;<i class="fas fa-heart icon-animate"></i>&nbsp;&nbsp;<a href="/">Naputao</a>
+                
+            </div>
+
+            <div class="theme-info info-item default">
+                Powered by&nbsp;<a target="_blank" href="https://hexo.io">Hexo</a>&nbsp;&&nbsp;Theme&nbsp;<a class="keep-version" target="_blank" href="https://github.com/XPoet/hexo-theme-keep">Keep</a>
+            </div>
+
+            
+
+            
+        
+
+        <div class="count-item info-item default">
+            
+
+            
+                <span class="count-box border-box uv">
+                    <span class="item-type border-box">Unique Visitor</span>
+                    <span class="item-value border-box uv" id="busuanzi_value_site_uv"></span>
+                </span>
+            
+
+            
+                <span class="count-box border-box pv">
+                    <span class="item-type border-box">Page View</span>
+                    <span class="item-value border-box pv" id="busuanzi_value_site_pv"></span>
+                </span>
+            
+        </div>
+    </div>
+</footer>
+
+        </div>
+    </div>
+
+    <!-- post tools -->
+    
+        <div class="post-tools right-toc">
+            <div class="post-tools-container border-box">
+    <ul class="tools-list border-box">
+        <!-- PC TOC show toggle -->
+<!-- PC go comment -->
+        
+    </ul>
+</div>
+
+        </div>
+    
+
+    <!-- side tools -->
+    <div class="side-tools">
+        <div class="side-tools-container border-box ">
+    <ul class="side-tools-list side-tools-show-handle border-box">
+        <li class="tools-item tool-font-adjust-plus flex-center">
+            <i class="fas fa-search-plus"></i>
+        </li>
+
+        <li class="tools-item tool-font-adjust-minus flex-center">
+            <i class="fas fa-search-minus"></i>
+        </li>
+
+        <li class="tools-item tool-dark-light-toggle flex-center">
+            <i class="fas fa-moon"></i>
+        </li>
+
+        <!-- rss -->
+        
+
+        <li class="tools-item tool-scroll-to-bottom flex-center">
+            <i class="fas fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="exposed-tools-list border-box">
+<li class="tools-item tool-toggle-show flex-center">
+            <i class="fas fa-cog fa-spin"></i>
+        </li>
+
+        <li class="tools-item tool-scroll-to-top flex-center show-arrow">
+            <i class="arrow fas fa-arrow-up"></i>
+            <span class="percent"></span>
+        </li>
+    </ul>
+</div>
+
+    </div>
+
+    <!-- image mask -->
+    <div class="zoom-in-image-mask">
+    <img class="zoom-in-image">
+</div>
+
+
+    <!-- local search -->
+    
+        <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+          <span class="search-input-field-pre">
+            <i class="fas fa-keyboard"></i>
+          </span>
+            <div class="search-input-container">
+                <input autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       placeholder="Search..."
+                       spellcheck="false"
+                       type="search"
+                       class="search-input"
+                >
+            </div>
+            <span class="close-popup-btn">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div id="search-result">
+            <div id="no-result">
+                <i class="fas fa-spinner fa-pulse fa-5x fa-fw"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+
+    <!-- tablet toc -->
+    
+        <div class="tablet-post-toc-mask">
+            <div class="tablet-post-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#cpu-vs-gpu"><span class="nav-number">1.</span> <span class="nav-text">为什么 CPU 思路无法直接解释 GPU</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#chip-view"><span class="nav-number">2.</span> <span class="nav-text">从全芯片视角看 GPU</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#warp-block-mapping"><span class="nav-number">3.</span> <span class="nav-text">线程、warp、block 与 kernel 的硬件映射</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#inside-sm"><span class="nav-number">4.</span> <span class="nav-text">SM 内部到底长什么样</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#latency-hiding"><span class="nav-number">5.</span> <span class="nav-text">GPU 如何靠调度隐藏延迟</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#memory-hierarchy"><span class="nav-number">6.</span> <span class="nav-text">Memory Hierarchy：真正限制性能的地方</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#tensor-core"><span class="nav-number">7.</span> <span class="nav-text">Tensor Core 为什么改变了 GPU 的形态</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#warp-journey"><span class="nav-number">8.</span> <span class="nav-text">一个 warp 的完整执行旅程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#vendor-terminology"><span class="nav-number">9.</span> <span class="nav-text">哪些概念是通用 GPU 原理，哪些是 NVIDIA 术语</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#performance-checklist"><span class="nav-number">10.</span> <span class="nav-text">理解架构后应如何看性能问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#source-note"><span class="nav-number">11.</span> <span class="nav-text">资料来源说明</span></a></li></ol>
+    </div>
+</div>
+
+            </div>
+        </div>
+    
+</main>
+
+
+
+<!-- common -->
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/header-shrink.js"></script>
+
+<script src="/js/back2top.js"></script>
+
+<script src="/js/dark-light-toggle.js"></script>
+
+<script src="/js/main.js"></script>
+
+<script src="/js/libs/anime.min.js"></script>
+
+
+<!-- local-search -->
+
+    
+<script src="/js/local-search.js"></script>
+
+
+
+<!-- code-block -->
+
+    
+<script src="/js/code-block.js"></script>
+
+
+
+<!-- lazyload -->
+
+    
+<script src="/js/lazyload.js"></script>
+
+
+
+<div class="pjax">
+
+    <script data-pjax>
+    (function () {
+      const clearJourney = () => {
+        if (window.__gpuJourneyTimer) {
+          clearInterval(window.__gpuJourneyTimer)
+          window.__gpuJourneyTimer = null
+        }
+      }
+
+      const bindPanels = () => {
+        document.querySelectorAll('.gpu-diagram-card').forEach((card) => {
+          const buttons = card.querySelectorAll('[data-gpu-panel]')
+          const copies = card.querySelectorAll('[data-gpu-copy]')
+          if (!buttons.length || !copies.length) return
+          buttons.forEach((button) => {
+            button.addEventListener('click', () => {
+              const key = button.dataset.gpuPanel
+              buttons.forEach((item) => {
+                const active = item === button
+                item.classList.toggle('is-active', active)
+                item.setAttribute('aria-pressed', active ? 'true' : 'false')
+              })
+              copies.forEach((item) => {
+                const active = item.dataset.gpuCopy === key
+                item.classList.toggle('is-active', active)
+                if (item.classList.contains('gpu-panel-text')) {
+                  item.hidden = !active
+                }
+              })
+            })
+          })
+        })
+      }
+
+      const bindJourney = () => {
+        const steps = document.querySelectorAll('.gpu-journey-step')
+        const toggle = document.querySelector('.gpu-journey-toggle')
+        if (!steps.length) return
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          steps.forEach((el, index) => el.classList.toggle('is-active', index === 0))
+          clearJourney()
+          if (toggle) {
+            toggle.textContent = '动画已停止'
+            toggle.disabled = true
+            toggle.setAttribute('aria-pressed', 'true')
+          }
+          return
+        }
+        let activeIndex = 0
+        let paused = false
+        steps.forEach((el, index) => el.classList.toggle('is-active', index === 0))
+        clearJourney()
+        window.__gpuJourneyTimer = setInterval(() => {
+          if (paused) return
+          if (!document.body.contains(steps[0])) {
+            clearJourney()
+            return
+          }
+          activeIndex = (activeIndex + 1) % steps.length
+          steps.forEach((el, index) => el.classList.toggle('is-active', index === activeIndex))
+        }, 1800)
+        if (toggle) {
+          toggle.disabled = false
+          toggle.textContent = '暂停动画'
+          toggle.setAttribute('aria-pressed', 'false')
+          toggle.onclick = () => {
+            paused = !paused
+            toggle.textContent = paused ? '继续动画' : '暂停动画'
+            toggle.setAttribute('aria-pressed', paused ? 'true' : 'false')
+          }
+        }
+      }
+
+      const init = () => {
+        if (window.__gpuJourneyCleanupHandler) {
+          document.removeEventListener('pjax:send', window.__gpuJourneyCleanupHandler)
+        }
+        window.__gpuJourneyCleanupHandler = clearJourney
+        document.addEventListener('pjax:send', window.__gpuJourneyCleanupHandler)
+        bindPanels()
+        bindJourney()
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true })
+      } else {
+        init()
+      }
+    })()
+    </script>
+    
+        <!-- post-helper -->
+        
+<script src="/js/post/post-helper.js"></script>
+
+
+        <!-- toc -->
+        
+            
+<script src="/js/post/toc.js"></script>
+
+        
+
+        <!-- copyright-info -->
+        
+            
+<script src="/js/post/copyright-info.js"></script>
+
+        
+
+        <!-- share -->
+        
+            
+<script src="/js/post/share.js"></script>
+
+        
+    
+
+    <!-- category-page -->
+    
+
+    <!-- links-page -->
+    
+</div>
+
+<!-- mermaid -->
+
+
+<!-- pjax -->
+
+    
+<script src="/js/libs/pjax.min.js"></script>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        window.pjax = new Pjax({
+            selectors: [
+                'head title',
+                '.page-container',
+                '.pjax'
+            ],
+            history: true,
+            debug: false,
+            cacheBust: false,
+            timeout: 0,
+            analytics: false,
+            currentUrlFullReload: false,
+            scrollRestoration: false,
+        });
+
+        document.addEventListener('pjax:send', () => {
+            KEEP.utils.pjaxProgressBarStart()
+        });
+
+        document.addEventListener('pjax:complete', () => {
+            KEEP.utils.pjaxProgressBarEnd()
+            window.pjax.executeScripts(document.querySelectorAll('script[data-pjax], .pjax script'))
+            KEEP.initExecute()
+        });
+    });
+</script>
+
+
+
+
+</body>
+</html>
