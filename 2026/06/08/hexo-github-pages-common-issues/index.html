@@ -9,7 +9,7 @@
     
     <title>
         
-            Tags |
+            Hexo + GitHub Pages 常见问题排查：从部署到更新 |
         
         Naputao
     </title>
@@ -98,7 +98,7 @@
                         </li>
                     
                         <li class="menu-item">
-                            <a class="active"
+                            <a class=""
                                href="/tags"
                             >
                                 TAGS
@@ -145,7 +145,7 @@
                 </li>
             
                 <li class="drawer-menu-item flex-center">
-                    <a class="active"
+                    <a class=""
                        href="/tags">TAGS</a>
                 </li>
             
@@ -171,24 +171,207 @@
                 
 
                     <div class="fade-in-down-animation">
-    <div class="subpage-hero-block border-box compact-landing">
-    <div class="subpage-hero-main">
-        <div class="eyebrow">Tags</div>
-        <h1>通过主题而不是时间找内容</h1>
-        <p>当前站点仍在补全标签体系，所以我先把最值得看的资料页集中放在这里，方便快速进入。</p>
+    <div class="post-page-container border-box">
+
+        <div class="article-content-container border-box">
+
+            
+
+            <div class="article-content-bottom border-box">
+                
+                    <div class="article-title">
+                        Hexo + GitHub Pages 常见问题排查：从部署到更新
+                    </div>
+                
+
+                
+                    <div class="article-header border-box">
+                        
+                            <div class="avatar-box border-box">
+                                <img src="/images/avatar.svg">
+                            </div>
+                        
+                        <div class="info-box">
+                            <div class="author">
+                                <span class="name">Naputao</span>
+                                
+                                    <span class="author-label">Lv1</span>
+                                
+                            </div>
+                            <div class="meta-info border-box">
+                                
+
+<div class="article-meta-info-container border-box post">
+    <div class="article-meta-info border-box">
+        
+
+
+        
+            <span class="meta-info-item article-create-date">
+                <i class="icon fa-solid fa-calendar-check"></i>&nbsp;
+                <span class="pc">2026-06-08 12:10:00</span>
+                <span class="mobile">2026-06-08 12:10</span>
+            </span>
+
+            <span class="meta-info-item article-update-date">
+                <i class="icon fa-solid fa-file-pen"></i>&nbsp;
+                <span class="pc" data-updated="Sun Jun 08 2026 12:10:00 GMT+0800">2026-06-08 12:10:00</span>
+            </span>
+        
+
+        
+
+        
+
+        
+        
+            <span class="meta-info-item article-wordcount">
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>1088 Words</span>
+            </span>
+        
+        
+            <span class="meta-info-item article-min2read">
+                <i class="icon fas fa-clock"></i>&nbsp;<span>4 Mins</span>
+            </span>
+        
+        
+            <span class="meta-info-item article-pv">
+                <i class="icon fas fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+            </span>
+        
     </div>
-    <div class="subpage-feature-grid border-box">
-        <a class="subpage-mini-card border-box" href="/2026/06/08/windows-gnu-toolchain-guide/"><strong>环境搭建</strong><span>GNU / MSYS2 / Cygwin</span></a>
-        <a class="subpage-mini-card border-box" href="/2026/06/08/hexo-github-pages-common-issues/"><strong>建站部署</strong><span>Hexo 与 Pages</span></a>
-        <a class="subpage-mini-card border-box" href="/2026/06/08/cpp-code-reading-patterns/"><strong>代码阅读</strong><span>C/C++ 怪写法整理</span></a>
+
+    
+</div>
+
+                            </div>
+                        </div>
+                    </div>
+                
+
+                <div class="article-content keep-markdown-body">
+                    
+
+                    <div class="article-summary-box">
+    <p>仓库里原本已经有一篇完整的 <strong>Hexo 部署到 GitHub Pages</strong> 图文教程，这里不再重复基础步骤，而是把它整理成一份<strong>更适合出问题时快速定位</strong>的排查清单。</p>
+</div>
+<h2 id="deployment-flow"><a href="#deployment-flow" class="headerlink" title="先把正确流程记清楚"></a>先把正确流程记清楚</h2>
+<p>正常流程其实只有四步：安装 Node.js / Git → 初始化 Hexo 项目 → 配置 deploy → 执行 <code>hexo clean &amp;&amp; hexo deploy</code>。如果网页没更新，通常并不是“Hexo 不行”，而是某一个环节的状态与你想象的不一致。</p>
+<h2 id="most-common-errors"><a href="#most-common-errors" class="headerlink" title="最常见的 5 类问题"></a>最常见的 5 类问题</h2>
+<h3 id="error-repo-name"><a href="#error-repo-name" class="headerlink" title="1. 仓库名不对"></a>1. 仓库名不对</h3>
+<p>GitHub Pages 的用户主页仓库通常要求命名为 <code>用户名.github.io</code>。如果仓库名不符合规则，部署本身可能成功，但最终访问路径会与你预期不一致。</p>
+<h3 id="error-deploy-config"><a href="#error-deploy-config" class="headerlink" title="2. deploy 配置没有改完整"></a>2. deploy 配置没有改完整</h3>
+<p>最容易漏的是 <code>repo</code> 和 <code>branch</code>。尤其是 branch 没写对时，你可能把内容推到了一个没有被 Pages 使用的分支。</p>
+<h3 id="error-plugin"><a href="#error-plugin" class="headerlink" title="3. 没安装部署插件"></a>3. 没安装部署插件</h3>
+<p>如果没有安装 <code>hexo-deployer-git</code>，执行 deploy 时往往会失败，或者提示找不到部署器。这种问题要先检查依赖，而不是重复点网页刷新。</p>
+<h3 id="error-cache"><a href="#error-cache" class="headerlink" title="4. 实际更新了，但浏览器缓存还在"></a>4. 实际更新了，但浏览器缓存还在</h3>
+<p>这类情况最迷惑：你明明已经推送成功，仓库里也能看到新提交，但网站还是旧样子。处理方法很直接：强制刷新、开无痕窗口、等几分钟再访问。</p>
+<h3 id="error-content"><a href="#error-content" class="headerlink" title="5. 你改的是源文件，没重新生成静态页"></a>5. 你改的是源文件，没重新生成静态页</h3>
+<p>如果只修改文章或主题文件，却没执行重新生成，最终推送到 Pages 的仍可能是旧内容。对于 Hexo 来说，“写完 → 生成 → 部署”是完整动作链。</p>
+<h2 id="practical-checklist"><a href="#practical-checklist" class="headerlink" title="一份可直接照抄的检查清单"></a>一份可直接照抄的检查清单</h2>
+<ol>
+    <li>确认仓库名是否正确。</li>
+    <li>确认 <code>_config.yml</code> 中 deploy 的 repo 与 branch 无误。</li>
+    <li>确认已安装 <code>hexo-deployer-git</code>。</li>
+    <li>重新执行 <code>hexo clean</code>、<code>hexo deploy</code>。</li>
+    <li>到 GitHub 仓库中看最新提交是否真的出现。</li>
+    <li>再去访问 <code>用户名.github.io</code>，必要时强刷或等待缓存刷新。</li>
+</ol>
+<div class="article-summary-box soft">
+    <p><strong>推荐思路：</strong>不要一上来就改配置。先判断问题属于“没有生成”“没有推送”“没有发布”还是“发布了但缓存没刷新”，再对症下手。</p>
+</div>
+<h2 id="why-this-page"><a href="#why-this-page" class="headerlink" title="为什么要单独做这页"></a>为什么要单独做这页</h2>
+<p>原始部署文章非常适合第一次跟着做，但当你第二次、第三次遇到问题时，更需要的是一份<strong>排错顺序</strong>。这也是把“教程”整理成“资料页”的价值：读者不是从零开始，而是在出错时快速回到正确轨道。</p>
+<h2 id="source-note"><a href="#source-note" class="headerlink" title="资料来源"></a>资料来源</h2>
+<p>本页依据仓库中原有的图文文章 <a href="/2023/11/05/Hexo%E9%83%A8%E7%BD%B2%E4%B8%AA%E4%BA%BA%E7%BD%91%E7%AB%99%E8%87%B3github/">《Hexo部署个人网站至github》</a> 与配套截图整理而成，重点保留最有复用价值的排错信息。</p>
+
+                </div>
+
+                
+
+                <div class="post-bottom-tags-and-share border-box">
+                    <div>
+                        
+                    </div>
+                    <div>
+                        
+                            <div class="post-share-container border-box">
+    <ul class="share-list-wrap border-box">
+        <li class="qq share-item border-box flex-center tooltip"
+            data-tooltip-content="Share to QQ"
+        >
+            <i class="fa-brands fa-qq"></i>
+        </li>
+        <li class="wechat share-item border-box flex-center tooltip tooltip-img"
+            data-tooltip-content="Share to WeChat"
+            data-tooltip-img-tip="Scan by WeChat"
+            data-tooltip-img-style="background-color: #fff; top: -10px; padding: 0.6rem 0.6rem 0.1rem 0.6rem;"
+        >
+            <i class="fa-brands fa-weixin"></i>
+        </li>
+        <li class="weibo share-item border-box flex-center tooltip"
+            data-tooltip-content="Share to WeiBo"
+        >
+            <i class="fa-brands fa-weibo"></i>
+        </li>
+    </ul>
+</div>
+
+                        
+                    </div>
+                </div>
+
+                
+
+                
+                    <div class="article-nav">
+                        <div class="article-prev">
+                                <a class="prev"
+                                   rel="prev"
+                                   href="/2026/06/08/windows-gnu-toolchain-guide/"
+                                   title="Windows 开发环境里的 GNU 工具链：MinGW、MSYS2、Cygwin 与 POSIX"
+                                >
+                                            <span class="left arrow-icon flex-center">
+                                      <i class="fas fa-chevron-left"></i>
+                                    </span>
+                                    <span class="title flex-center">
+                                        <span class="post-nav-item">Previous</span>
+                                        <span class="post-nav-title-item text-ellipsis">Windows 开发环境里的 GNU 工具链：MinGW、MSYS2、Cygwin 与 POSIX</span>
+                                    </span>
+                                </a>
+                            </div>
+                        <div class="article-next">
+                                <a class="next"
+                                   rel="next"
+                                   href="/2026/06/08/cpp-code-reading-patterns/"
+                                   title="C/C++ 代码阅读里的怪写法：宏、break 清理流与语句表达式"
+                                >
+                                    <span class="title flex-center">
+                                        <span class="post-nav-title-item text-ellipsis">C/C++ 代码阅读里的怪写法：宏、break 清理流与语句表达式</span>
+                                        <span class="post-nav-item">Next posts</span>
+                                    </span>
+                                            <span class="right arrow-icon flex-center">
+                                      <i class="fas fa-chevron-right"></i>
+                                    </span>
+                                </a>
+                            </div>
+                    </div>
+                
+
+                
+
+            </div>
+        </div>
+
+        
+            <div class="pc-post-toc right-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"></ol>
     </div>
 </div>
-    <div class="tagcloud-container">
-        
-            <div class="tagcloud-content">
-                <a href="/tags/Hexo/" style="font-size: 1rem;">Hexo</a> <a href="/tags/Keep/" style="font-size: 1rem;">Keep</a>
+
             </div>
-        
         
     </div>
 </div>
@@ -245,6 +428,17 @@
 
     <!-- post tools -->
     
+        <div class="post-tools right-toc">
+            <div class="post-tools-container border-box">
+    <ul class="tools-list border-box">
+        <!-- PC TOC show toggle -->
+<!-- PC go comment -->
+        
+    </ul>
+</div>
+
+        </div>
+    
 
     <!-- side tools -->
     <div class="side-tools">
@@ -271,11 +465,7 @@
     </ul>
 
     <ul class="exposed-tools-list border-box">
-        
-
-        
-
-        <li class="tools-item tool-toggle-show flex-center">
+<li class="tools-item tool-toggle-show flex-center">
             <i class="fas fa-cog fa-spin"></i>
         </li>
 
@@ -328,6 +518,17 @@
 
     <!-- tablet toc -->
     
+        <div class="tablet-post-toc-mask">
+            <div class="tablet-post-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"></ol>
+    </div>
+</div>
+
+            </div>
+        </div>
+    
 </main>
 
 
@@ -369,6 +570,32 @@
 
 
 <div class="pjax">
+    
+        <!-- post-helper -->
+        
+<script src="/js/post/post-helper.js"></script>
+
+
+        <!-- toc -->
+        
+            
+<script src="/js/post/toc.js"></script>
+
+        
+
+        <!-- copyright-info -->
+        
+            
+<script src="/js/post/copyright-info.js"></script>
+
+        
+
+        <!-- share -->
+        
+            
+<script src="/js/post/share.js"></script>
+
+        
     
 
     <!-- category-page -->

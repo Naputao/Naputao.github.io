@@ -9,7 +9,7 @@
     
     <title>
         
-            Tags |
+            C/C++ 代码阅读里的怪写法：宏、break 清理流与语句表达式 |
         
         Naputao
     </title>
@@ -98,7 +98,7 @@
                         </li>
                     
                         <li class="menu-item">
-                            <a class="active"
+                            <a class=""
                                href="/tags"
                             >
                                 TAGS
@@ -145,7 +145,7 @@
                 </li>
             
                 <li class="drawer-menu-item flex-center">
-                    <a class="active"
+                    <a class=""
                        href="/tags">TAGS</a>
                 </li>
             
@@ -171,24 +171,184 @@
                 
 
                     <div class="fade-in-down-animation">
-    <div class="subpage-hero-block border-box compact-landing">
-    <div class="subpage-hero-main">
-        <div class="eyebrow">Tags</div>
-        <h1>通过主题而不是时间找内容</h1>
-        <p>当前站点仍在补全标签体系，所以我先把最值得看的资料页集中放在这里，方便快速进入。</p>
+    <div class="post-page-container border-box">
+
+        <div class="article-content-container border-box">
+
+            
+
+            <div class="article-content-bottom border-box">
+                
+                    <div class="article-title">
+                        C/C++ 代码阅读里的怪写法：宏、break 清理流与语句表达式
+                    </div>
+                
+
+                
+                    <div class="article-header border-box">
+                        
+                            <div class="avatar-box border-box">
+                                <img src="/images/avatar.svg">
+                            </div>
+                        
+                        <div class="info-box">
+                            <div class="author">
+                                <span class="name">Naputao</span>
+                                
+                                    <span class="author-label">Lv1</span>
+                                
+                            </div>
+                            <div class="meta-info border-box">
+                                
+
+<div class="article-meta-info-container border-box post">
+    <div class="article-meta-info border-box">
+        
+
+
+        
+            <span class="meta-info-item article-create-date">
+                <i class="icon fa-solid fa-calendar-check"></i>&nbsp;
+                <span class="pc">2026-06-08 12:20:00</span>
+                <span class="mobile">2026-06-08 12:20</span>
+            </span>
+
+            <span class="meta-info-item article-update-date">
+                <i class="icon fa-solid fa-file-pen"></i>&nbsp;
+                <span class="pc" data-updated="Sun Jun 08 2026 12:20:00 GMT+0800">2026-06-08 12:20:00</span>
+            </span>
+        
+
+        
+
+        
+
+        
+        
+            <span class="meta-info-item article-wordcount">
+                <i class="icon fas fa-file-word"></i>&nbsp;<span>982 Words</span>
+            </span>
+        
+        
+            <span class="meta-info-item article-min2read">
+                <i class="icon fas fa-clock"></i>&nbsp;<span>3 Mins</span>
+            </span>
+        
+        
+            <span class="meta-info-item article-pv">
+                <i class="icon fas fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+            </span>
+        
     </div>
-    <div class="subpage-feature-grid border-box">
-        <a class="subpage-mini-card border-box" href="/2026/06/08/windows-gnu-toolchain-guide/"><strong>环境搭建</strong><span>GNU / MSYS2 / Cygwin</span></a>
-        <a class="subpage-mini-card border-box" href="/2026/06/08/hexo-github-pages-common-issues/"><strong>建站部署</strong><span>Hexo 与 Pages</span></a>
-        <a class="subpage-mini-card border-box" href="/2026/06/08/cpp-code-reading-patterns/"><strong>代码阅读</strong><span>C/C++ 怪写法整理</span></a>
+
+    
+</div>
+
+                            </div>
+                        </div>
+                    </div>
+                
+
+                <div class="article-content keep-markdown-body">
+                    
+
+                    <div class="article-summary-box">
+    <p>很多“奇怪代码”并不是炫技，而是历史包袱、宏机制、兼容性和可维护性一起作用后的结果。看懂这些写法，读内核、底层库或老代码时会轻松很多。</p>
+</div>
+<h2 id="macro-block"><a href="#macro-block" class="headerlink" title="一、为什么宏里喜欢写 do{ }while(0)"></a>一、为什么宏里喜欢写 <code>do{ }while(0)</code></h2>
+<p>最核心的原因是：<strong>把多行宏包装成一个语句</strong>。这样当宏被放进 <code>if/else</code> 里时，不会因为展开后变成多条语句而破坏控制流。</p>
+<p>从阅读角度看，只要你看到 <code>do{...}while(0)</code> 包着一段宏逻辑，第一反应就应该是：作者在防止调用点因为缺少花括号而出错。</p>
+<h2 id="break-cleanup"><a href="#break-cleanup" class="headerlink" title="二、为什么有人用 break 代替 goto 做统一清理"></a>二、为什么有人用 <code>break</code> 代替 <code>goto</code> 做统一清理</h2>
+<p>在资源释放、错误处理很多的场景里，<code>goto END</code> 是经典写法；但有时作者会把主逻辑放到一个 <code>do { ... } while(0)</code> 里，通过 <code>break</code> 提前跳出，最后统一执行清理代码。</p>
+<p>这种写法的价值在于：<strong>仍然保留“单出口统一清理”的思路，同时减少标签跳转带来的视觉干扰</strong>。它并不一定比 <code>goto</code> 更高级，但在小范围逻辑里会更顺。</p>
+<h2 id="empty-macro"><a href="#empty-macro" class="headerlink" title="三、空宏为什么也常写成 do{ }while(0)"></a>三、空宏为什么也常写成 <code>do{ }while(0)</code></h2>
+<p>因为真正的空宏在某些上下文里可能引发 warning，或者让调用点的分号、条件语句形态变得不统一。写成 <code>#define EMPTY do{}while(0)</code> 后，它在形式上就和普通语句一致了。</p>
+<h2 id="statement-expression"><a href="#statement-expression" class="headerlink" title="四、GCC 语句表达式到底是什么"></a>四、GCC 语句表达式到底是什么</h2>
+<p>GCC 的 statement expression 允许你写出形如 <code>({ ... })</code> 的结构，把多条语句当成一个表达式来返回值。它很灵活，但也意味着<strong>可移植性会下降</strong>。因此看到这种写法时，要立刻意识到：这段代码可能依赖 GCC/Clang 扩展，而不是纯标准 C/C++。</p>
+<h2 id="reading-advice"><a href="#reading-advice" class="headerlink" title="五、阅读这类代码时更好的方法"></a>五、阅读这类代码时更好的方法</h2>
+<ul>
+    <li>先问它在解决什么问题，而不是先嫌它“难看”。</li>
+    <li>判断它是在处理宏展开、错误清理、兼容性，还是编译器扩展。</li>
+    <li>不要急着照抄到业务代码里；很多技巧只适合底层或受约束环境。</li>
+</ul>
+<div class="article-summary-box soft">
+    <p><strong>阅读建议：</strong>这类写法最值得学的不是语法本身，而是作者面对约束时的取舍：如何保证调用安全、如何减少重复清理、如何在便利性和可移植性之间做平衡。</p>
+</div>
+<h2 id="source-note"><a href="#source-note" class="headerlink" title="资料来源"></a>资料来源</h2>
+<p>本页基于仓库中原有文章 <a href="/2023/11/19/%E9%98%85%E8%AF%BB%E4%BB%A3%E7%A0%81%E4%B8%AD%E5%87%BA%E7%8E%B0%E7%9A%84%E4%B8%80%E4%BA%9B%E5%A5%87%E6%80%AA%E4%BB%A3%E7%A0%81/">《阅读代码中出现的一些奇怪代码》</a> 重组整理而成，删去了零散示例，保留了最值得公开沉淀的几个阅读视角。</p>
+
+                </div>
+
+                
+
+                <div class="post-bottom-tags-and-share border-box">
+                    <div>
+                        
+                    </div>
+                    <div>
+                        
+                            <div class="post-share-container border-box">
+    <ul class="share-list-wrap border-box">
+        <li class="qq share-item border-box flex-center tooltip"
+            data-tooltip-content="Share to QQ"
+        >
+            <i class="fa-brands fa-qq"></i>
+        </li>
+        <li class="wechat share-item border-box flex-center tooltip tooltip-img"
+            data-tooltip-content="Share to WeChat"
+            data-tooltip-img-tip="Scan by WeChat"
+            data-tooltip-img-style="background-color: #fff; top: -10px; padding: 0.6rem 0.6rem 0.1rem 0.6rem;"
+        >
+            <i class="fa-brands fa-weixin"></i>
+        </li>
+        <li class="weibo share-item border-box flex-center tooltip"
+            data-tooltip-content="Share to WeiBo"
+        >
+            <i class="fa-brands fa-weibo"></i>
+        </li>
+    </ul>
+</div>
+
+                        
+                    </div>
+                </div>
+
+                
+
+                
+                    <div class="article-nav">
+                        <div class="article-prev">
+                                <a class="prev"
+                                   rel="prev"
+                                   href="/2026/06/08/hexo-github-pages-common-issues/"
+                                   title="Hexo + GitHub Pages 常见问题排查：从部署到更新"
+                                >
+                                            <span class="left arrow-icon flex-center">
+                                      <i class="fas fa-chevron-left"></i>
+                                    </span>
+                                    <span class="title flex-center">
+                                        <span class="post-nav-item">Previous</span>
+                                        <span class="post-nav-title-item text-ellipsis">Hexo + GitHub Pages 常见问题排查：从部署到更新</span>
+                                    </span>
+                                </a>
+                            </div>
+                    </div>
+                
+
+                
+
+            </div>
+        </div>
+
+        
+            <div class="pc-post-toc right-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"></ol>
     </div>
 </div>
-    <div class="tagcloud-container">
-        
-            <div class="tagcloud-content">
-                <a href="/tags/Hexo/" style="font-size: 1rem;">Hexo</a> <a href="/tags/Keep/" style="font-size: 1rem;">Keep</a>
+
             </div>
-        
         
     </div>
 </div>
@@ -245,6 +405,17 @@
 
     <!-- post tools -->
     
+        <div class="post-tools right-toc">
+            <div class="post-tools-container border-box">
+    <ul class="tools-list border-box">
+        <!-- PC TOC show toggle -->
+<!-- PC go comment -->
+        
+    </ul>
+</div>
+
+        </div>
+    
 
     <!-- side tools -->
     <div class="side-tools">
@@ -271,11 +442,7 @@
     </ul>
 
     <ul class="exposed-tools-list border-box">
-        
-
-        
-
-        <li class="tools-item tool-toggle-show flex-center">
+<li class="tools-item tool-toggle-show flex-center">
             <i class="fas fa-cog fa-spin"></i>
         </li>
 
@@ -328,6 +495,17 @@
 
     <!-- tablet toc -->
     
+        <div class="tablet-post-toc-mask">
+            <div class="tablet-post-toc">
+                <div class="post-toc-wrap border-box">
+    <div class="post-toc border-box">
+        <ol class="nav"></ol>
+    </div>
+</div>
+
+            </div>
+        </div>
+    
 </main>
 
 
@@ -369,6 +547,32 @@
 
 
 <div class="pjax">
+    
+        <!-- post-helper -->
+        
+<script src="/js/post/post-helper.js"></script>
+
+
+        <!-- toc -->
+        
+            
+<script src="/js/post/toc.js"></script>
+
+        
+
+        <!-- copyright-info -->
+        
+            
+<script src="/js/post/copyright-info.js"></script>
+
+        
+
+        <!-- share -->
+        
+            
+<script src="/js/post/share.js"></script>
+
+        
     
 
     <!-- category-page -->

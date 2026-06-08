@@ -1,6 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Windows 开发环境里的 GNU 工具链：MinGW、MSYS2、Cygwin 与 POSIX</title>
+    <url>/2026/06/08/windows-gnu-toolchain-guide/</url>
+    <content><![CDATA[<div class="article-summary-box">
+    <p>这篇资料是基于仓库里原有的 <strong>GNU / glibc / POSIX / MinGW / MSYS2 / Cygwin</strong> 零散说明重新整理出来的。原始材料更像词条堆叠，这里把它改写成一篇面向“怎么选开发环境”的实用文章。</p>
+</div>
+<h2 id="why-confused"><a href="#why-confused" class="headerlink" title="为什么这几个名词总是容易混"></a>为什么这几个名词总是容易混</h2>
+<p>很多初学者第一次在 Windows 上搭 C/C++ 环境时，会同时看到 GNU、POSIX、MinGW、MSYS2、Cygwin 这几个词。它们并不在同一层：有的是<strong>标准</strong>，有的是<strong>工具链</strong>，有的是<strong>兼容层</strong>，有的是<strong>软件集合</strong>。</p>
+<table>
+    <thead><tr><th>名词</th><th>更准确的理解</th><th>它解决什么问题</th></tr></thead>
+    <tbody>
+        <tr><td>GNU</td><td>自由软件工程与工具集合</td><td>提供编译器、库、shell、工具链生态</td></tr>
+        <tr><td>glibc</td><td>GNU 的 C 运行库实现</td><td>为 Linux / GNU 环境提供底层 C API</td></tr>
+        <tr><td>POSIX</td><td>可移植操作系统接口标准</td><td>定义跨 Unix 系统可移植的软件接口</td></tr>
+        <tr><td>MinGW</td><td>面向 Windows 原生 API 的 GNU 工具链</td><td>编译出更贴近原生 Windows 的程序</td></tr>
+        <tr><td>MSYS2</td><td>Windows 上的类 Unix 工具环境 + 包管理</td><td>让安装 gcc / make / pkg-config 变得容易</td></tr>
+        <tr><td>Cygwin</td><td>POSIX 兼容层 + 工具集合</td><td>让许多 Unix 程序更直接地跑在 Windows 上</td></tr>
+    </tbody>
+</table>
+<h2 id="how-to-choose"><a href="#how-to-choose" class="headerlink" title="实际开发里怎么选"></a>实际开发里怎么选</h2>
+<p>如果你的目标是<strong>写一个普通 Windows 程序</strong>，而且希望生成的程序尽量少依赖额外环境，优先考虑 <strong>MinGW-w64 / MSYS2 里的 mingw 工具链</strong>。因为它最终还是贴着 Windows 的 API 与运行时在工作，部署成本更低。</p>
+<p>如果你的目标是<strong>尽量复现 Unix/POSIX 开发体验</strong>，例如你手里有大量 shell 脚本、autotools 项目、依赖 POSIX 行为的代码，那么 <strong>Cygwin</strong> 会更顺手，因为它提供的是一层更完整的兼容环境。</p>
+<div class="article-summary-box soft">
+    <p><strong>一句话总结：</strong>想要“更像 Windows 原生”就偏向 MinGW；想要“更像 Unix 环境”就偏向 Cygwin；想要安装、更新和维护更省心，日常个人开发通常先从 <strong>MSYS2 + MinGW-w64</strong> 开始。</p>
+</div>
+<h2 id="practical-scenarios"><a href="#practical-scenarios" class="headerlink" title="三个常见场景"></a>三个常见场景</h2>
+<h3 id="case-1"><a href="#case-1" class="headerlink" title="场景一：算法竞赛 / 学校作业"></a>场景一：算法竞赛 / 学校作业</h3>
+<p>优先选择 <strong>MinGW-w64</strong>。这类场景通常只需要 gcc/g++、基础 STL 和简单命令行程序，不需要复杂的 POSIX 兼容层。</p>
+<h3 id="case-2"><a href="#case-2" class="headerlink" title="场景二：需要 make、bash、包管理"></a>场景二：需要 make、bash、包管理</h3>
+<p>优先选择 <strong>MSYS2</strong>。它最大的价值不只是“能编译”，而是能把 shell、包管理器和编译工具组合成更像 Linux 的工作流。</p>
+<h3 id="case-3"><a href="#case-3" class="headerlink" title="场景三：移植 Unix 工程"></a>场景三：移植 Unix 工程</h3>
+<p>优先考虑 <strong>Cygwin</strong>。如果代码默认假设自己运行在 POSIX 环境里，Cygwin 的兼容层会比单纯的 MinGW 更省事。</p>
+<h2 id="common-misunderstanding"><a href="#common-misunderstanding" class="headerlink" title="容易踩的误区"></a>容易踩的误区</h2>
+<ul>
+    <li><strong>误区 1：</strong>把 GNU 当成某个单独安装包。实际上 GNU 更像一整套自由软件生态。</li>
+    <li><strong>误区 2：</strong>认为 POSIX 是一个软件。其实它是接口标准，不是给你直接双击运行的程序。</li>
+    <li><strong>误区 3：</strong>把 MSYS2 和 MinGW 混为一谈。MSYS2 是环境与分发方式，MinGW 是更偏原生 Windows 的工具链目标。</li>
+</ul>
+<h2 id="source-note"><a href="#source-note" class="headerlink" title="资料来源"></a>资料来源</h2>
+<p>本页整理自仓库中原有文章 <a href="/2023/11/13/%E8%BD%AF%E4%BB%B6%E6%B8%85%E5%8D%95&%E4%BB%8B%E7%BB%8D/">《软件清单&介绍》</a>，并对原文中的词条式说明做了重组与取舍，使其更适合作为网站公开资料页阅读。</p>]]></content>
+  </entry>
+  <entry>
+    <title>Hexo + GitHub Pages 常见问题排查：从部署到更新</title>
+    <url>/2026/06/08/hexo-github-pages-common-issues/</url>
+    <content><![CDATA[<div class="article-summary-box">
+    <p>仓库里原本已经有一篇完整的 <strong>Hexo 部署到 GitHub Pages</strong> 图文教程，这里不再重复基础步骤，而是把它整理成一份<strong>更适合出问题时快速定位</strong>的排查清单。</p>
+</div>
+<h2 id="deployment-flow"><a href="#deployment-flow" class="headerlink" title="先把正确流程记清楚"></a>先把正确流程记清楚</h2>
+<p>正常流程其实只有四步：安装 Node.js / Git → 初始化 Hexo 项目 → 配置 deploy → 执行 <code>hexo clean &amp;&amp; hexo deploy</code>。如果网页没更新，通常并不是“Hexo 不行”，而是某一个环节的状态与你想象的不一致。</p>
+<h2 id="most-common-errors"><a href="#most-common-errors" class="headerlink" title="最常见的 5 类问题"></a>最常见的 5 类问题</h2>
+<h3 id="error-repo-name"><a href="#error-repo-name" class="headerlink" title="1. 仓库名不对"></a>1. 仓库名不对</h3>
+<p>GitHub Pages 的用户主页仓库通常要求命名为 <code>用户名.github.io</code>。如果仓库名不符合规则，部署本身可能成功，但最终访问路径会与你预期不一致。</p>
+<h3 id="error-deploy-config"><a href="#error-deploy-config" class="headerlink" title="2. deploy 配置没有改完整"></a>2. deploy 配置没有改完整</h3>
+<p>最容易漏的是 <code>repo</code> 和 <code>branch</code>。尤其是 branch 没写对时，你可能把内容推到了一个没有被 Pages 使用的分支。</p>
+<h3 id="error-plugin"><a href="#error-plugin" class="headerlink" title="3. 没安装部署插件"></a>3. 没安装部署插件</h3>
+<p>如果没有安装 <code>hexo-deployer-git</code>，执行 deploy 时往往会失败，或者提示找不到部署器。这种问题要先检查依赖，而不是重复点网页刷新。</p>
+<h3 id="error-cache"><a href="#error-cache" class="headerlink" title="4. 实际更新了，但浏览器缓存还在"></a>4. 实际更新了，但浏览器缓存还在</h3>
+<p>这类情况最迷惑：你明明已经推送成功，仓库里也能看到新提交，但网站还是旧样子。处理方法很直接：强制刷新、开无痕窗口、等几分钟再访问。</p>
+<h3 id="error-content"><a href="#error-content" class="headerlink" title="5. 你改的是源文件，没重新生成静态页"></a>5. 你改的是源文件，没重新生成静态页</h3>
+<p>如果只修改文章或主题文件，却没执行重新生成，最终推送到 Pages 的仍可能是旧内容。对于 Hexo 来说，“写完 → 生成 → 部署”是完整动作链。</p>
+<h2 id="practical-checklist"><a href="#practical-checklist" class="headerlink" title="一份可直接照抄的检查清单"></a>一份可直接照抄的检查清单</h2>
+<ol>
+    <li>确认仓库名是否正确。</li>
+    <li>确认 <code>_config.yml</code> 中 deploy 的 repo 与 branch 无误。</li>
+    <li>确认已安装 <code>hexo-deployer-git</code>。</li>
+    <li>重新执行 <code>hexo clean</code>、<code>hexo deploy</code>。</li>
+    <li>到 GitHub 仓库中看最新提交是否真的出现。</li>
+    <li>再去访问 <code>用户名.github.io</code>，必要时强刷或等待缓存刷新。</li>
+</ol>
+<div class="article-summary-box soft">
+    <p><strong>推荐思路：</strong>不要一上来就改配置。先判断问题属于“没有生成”“没有推送”“没有发布”还是“发布了但缓存没刷新”，再对症下手。</p>
+</div>
+<h2 id="why-this-page"><a href="#why-this-page" class="headerlink" title="为什么要单独做这页"></a>为什么要单独做这页</h2>
+<p>原始部署文章非常适合第一次跟着做，但当你第二次、第三次遇到问题时，更需要的是一份<strong>排错顺序</strong>。这也是把“教程”整理成“资料页”的价值：读者不是从零开始，而是在出错时快速回到正确轨道。</p>
+<h2 id="source-note"><a href="#source-note" class="headerlink" title="资料来源"></a>资料来源</h2>
+<p>本页依据仓库中原有的图文文章 <a href="/2023/11/05/Hexo%E9%83%A8%E7%BD%B2%E4%B8%AA%E4%BA%BA%E7%BD%91%E7%AB%99%E8%87%B3github/">《Hexo部署个人网站至github》</a> 与配套截图整理而成，重点保留最有复用价值的排错信息。</p>]]></content>
+  </entry>
+  <entry>
+    <title>C/C++ 代码阅读里的怪写法：宏、break 清理流与语句表达式</title>
+    <url>/2026/06/08/cpp-code-reading-patterns/</url>
+    <content><![CDATA[<div class="article-summary-box">
+    <p>很多“奇怪代码”并不是炫技，而是历史包袱、宏机制、兼容性和可维护性一起作用后的结果。看懂这些写法，读内核、底层库或老代码时会轻松很多。</p>
+</div>
+<h2 id="macro-block"><a href="#macro-block" class="headerlink" title="一、为什么宏里喜欢写 do{ }while(0)"></a>一、为什么宏里喜欢写 <code>do{ }while(0)</code></h2>
+<p>最核心的原因是：<strong>把多行宏包装成一个语句</strong>。这样当宏被放进 <code>if/else</code> 里时，不会因为展开后变成多条语句而破坏控制流。</p>
+<p>从阅读角度看，只要你看到 <code>do{...}while(0)</code> 包着一段宏逻辑，第一反应就应该是：作者在防止调用点因为缺少花括号而出错。</p>
+<h2 id="break-cleanup"><a href="#break-cleanup" class="headerlink" title="二、为什么有人用 break 代替 goto 做统一清理"></a>二、为什么有人用 <code>break</code> 代替 <code>goto</code> 做统一清理</h2>
+<p>在资源释放、错误处理很多的场景里，<code>goto END</code> 是经典写法；但有时作者会把主逻辑放到一个 <code>do { ... } while(0)</code> 里，通过 <code>break</code> 提前跳出，最后统一执行清理代码。</p>
+<p>这种写法的价值在于：<strong>仍然保留“单出口统一清理”的思路，同时减少标签跳转带来的视觉干扰</strong>。它并不一定比 <code>goto</code> 更高级，但在小范围逻辑里会更顺。</p>
+<h2 id="empty-macro"><a href="#empty-macro" class="headerlink" title="三、空宏为什么也常写成 do{ }while(0)"></a>三、空宏为什么也常写成 <code>do{ }while(0)</code></h2>
+<p>因为真正的空宏在某些上下文里可能引发 warning，或者让调用点的分号、条件语句形态变得不统一。写成 <code>#define EMPTY do{}while(0)</code> 后，它在形式上就和普通语句一致了。</p>
+<h2 id="statement-expression"><a href="#statement-expression" class="headerlink" title="四、GCC 语句表达式到底是什么"></a>四、GCC 语句表达式到底是什么</h2>
+<p>GCC 的 statement expression 允许你写出形如 <code>({ ... })</code> 的结构，把多条语句当成一个表达式来返回值。它很灵活，但也意味着<strong>可移植性会下降</strong>。因此看到这种写法时，要立刻意识到：这段代码可能依赖 GCC/Clang 扩展，而不是纯标准 C/C++。</p>
+<h2 id="reading-advice"><a href="#reading-advice" class="headerlink" title="五、阅读这类代码时更好的方法"></a>五、阅读这类代码时更好的方法</h2>
+<ul>
+    <li>先问它在解决什么问题，而不是先嫌它“难看”。</li>
+    <li>判断它是在处理宏展开、错误清理、兼容性，还是编译器扩展。</li>
+    <li>不要急着照抄到业务代码里；很多技巧只适合底层或受约束环境。</li>
+</ul>
+<div class="article-summary-box soft">
+    <p><strong>阅读建议：</strong>这类写法最值得学的不是语法本身，而是作者面对约束时的取舍：如何保证调用安全、如何减少重复清理、如何在便利性和可移植性之间做平衡。</p>
+</div>
+<h2 id="source-note"><a href="#source-note" class="headerlink" title="资料来源"></a>资料来源</h2>
+<p>本页基于仓库中原有文章 <a href="/2023/11/19/%E9%98%85%E8%AF%BB%E4%BB%A3%E7%A0%81%E4%B8%AD%E5%87%BA%E7%8E%B0%E7%9A%84%E4%B8%80%E4%BA%9B%E5%A5%87%E6%80%AA%E4%BB%A3%E7%A0%81/">《阅读代码中出现的一些奇怪代码》</a> 重组整理而成，删去了零散示例，保留了最值得公开沉淀的几个阅读视角。</p>]]></content>
+  </entry>
+  <entry>
     <title>Hexo部署个人网站至github</title>
     <url>/2023/11/05/Hexo%E9%83%A8%E7%BD%B2%E4%B8%AA%E4%BA%BA%E7%BD%91%E7%AB%99%E8%87%B3github/</url>
     <content><![CDATA[<h2 id="需要的工具："><a href="#需要的工具：" class="headerlink" title="需要的工具："></a>需要的工具：</h2><p>​	node.js hexo</p>
