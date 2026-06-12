@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>TRust 机制深析：把 unsafe 关进笼子的 12 个机制细节</title>
+    <url>/2026/06/12/trust-slides/</url>
+    <content><![CDATA[<div class="article-summary-box">
+    <p>基于 USENIX Security 2023 论文《TRust: A Compilation Framework for In-process Isolation to Protect Safe Rust against Untrusted Code》的读书报告演示，逐条拆解 TRust 在进程内隔离不可信代码、保护 Safe Rust 时所依赖的编译期机制。</p>
+</div>
+<p>TRust 的核心目标是让 untrusted 代码既不能读也不能写 Safe 域，且对开发者完全透明。演示围绕 Rust 安全模型的裂缝、unsafe 的风险面，以及 TRust 提出的工程化隔离方案展开，覆盖编译框架、运行时与硬件协同等 12 个机制细节。本页为全屏 PPT 式 HTML 演示，支持键盘、鼠标滚轮与触控滑动导航。</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>进程内隔离核心脉络报告</title>
+    <url>/2026/06/12/trust-intra-process-isolation/</url>
+    <content><![CDATA[<div class="article-summary-box">
+    <p>进程内隔离核心脉络报告的 PPT 式 HTML 演示版，串起进程内隔离的核心脉络与关键机制，支持键盘、鼠标滚轮、触控滑动和缩略目录导航。</p>
+</div>
+<p>报告以演示形式梳理进程内隔离的整体脉络：从威胁模型与隔离目标出发，到隔离边界、内存保护机制与编译/运行时支持，帮助快速建立对进程内隔离技术路线的整体认知。</p>
+]]></content>
+  </entry>
+  <entry>
     <title>GPU 架构详解：从 Warp、SM 与 Memory Hierarchy 到 Tensor Core 的执行路径</title>
     <url>/2026/06/08/gpu-architecture-deep-dive/</url>
     <content><![CDATA[<div class="article-summary-box">

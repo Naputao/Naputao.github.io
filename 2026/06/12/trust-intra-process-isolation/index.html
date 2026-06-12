@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进程内隔离核心脉络报告 · Slides</title>
+  <meta name="description" content="进程内隔离核心脉络报告的PPT式HTML演示版，支持键盘、鼠标滚轮、触控滑动和缩略目录导航。">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10151b;
+      --panel: rgba(255, 249, 238, 0.94);
+      --panel-2: rgba(247, 237, 222, 0.9);
+      --ink: #1f2933;
+      --muted: #687487;
+      --light: #fff8ec;
+      --accent: #d77a45;
+      --accent-2: #67c3d0;
+      --accent-3: #a8c66c;
+      --line: rgba(255, 255, 255, 0.18);
+      --shadow: 0 26px 80px rgba(0, 0, 0, 0.32);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(215, 122, 69, 0.26), transparent 30%),
+        radial-gradient(circle at 86% 12%, rgba(103, 195, 208, 0.24), transparent 32%),
+        radial-gradient(circle at 72% 85%, rgba(168, 198, 108, 0.16), transparent 26%),
+        linear-gradient(135deg, #111820 0%, #17212a 48%, #0d1218 100%);
+      color: var(--light);
+    }
+
+    a { color: inherit; }
+
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    button:focus-visible,
+    a:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 3px solid rgba(103, 195, 208, 0.8);
+      outline-offset: 3px;
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    .slides {
+      width: 100%;
+      height: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: clamp(14px, 2vh, 26px);
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      padding: clamp(22px, 4vw, 64px);
+      opacity: 0;
+      transform: translateX(7%) scale(0.985);
+      pointer-events: none;
+      transition: opacity 420ms ease, transform 520ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    .slide.prev {
+      transform: translateX(-7%) scale(0.985);
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: clamp(10px, 1.8vw, 24px);
+      z-index: -1;
+      border: 1px solid var(--line);
+      border-radius: clamp(22px, 4vw, 44px);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+        repeating-linear-gradient(90deg, transparent 0 42px, rgba(255,255,255,0.035) 43px 44px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow);
+    }
+
+    .slide-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      min-height: 30px;
+      padding: 6px 12px;
+      color: rgba(255, 248, 236, 0.82);
+      font-size: clamp(0.76rem, 1.1vw, 0.95rem);
+      line-height: 1;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+    }
+
+    .slide-kicker::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 18px rgba(103, 195, 208, 0.8);
+    }
+
+    .slide-body {
+      display: grid;
+      align-content: center;
+      min-height: 0;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      max-width: 11ch;
+      font-size: clamp(3rem, 9vw, 8.4rem);
+      line-height: 0.95;
+      letter-spacing: -0.08em;
+    }
+
+    h2 {
+      max-width: 14ch;
+      font-size: clamp(2.2rem, 6vw, 6.4rem);
+      line-height: 0.98;
+      letter-spacing: -0.07em;
+    }
+
+    h3 {
+      font-size: clamp(1.05rem, 1.6vw, 1.45rem);
+      line-height: 1.25;
+    }
+
+    .lead {
+      max-width: 820px;
+      margin-top: clamp(18px, 3vh, 34px);
+      color: rgba(255, 248, 236, 0.78);
+      font-size: clamp(1.02rem, 2vw, 1.65rem);
+      line-height: 1.55;
+    }
+
+    .title-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.72fr);
+      gap: clamp(28px, 5vw, 76px);
+      align-items: center;
+    }
+
+    .big-number {
+      color: rgba(255, 248, 236, 0.1);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(7rem, 18vw, 18rem);
+      line-height: 0.8;
+      letter-spacing: -0.12em;
+      user-select: none;
+    }
+
+    .meta-panel,
+    .glass-panel {
+      padding: clamp(18px, 2.6vw, 34px);
+      color: var(--ink);
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: clamp(20px, 3vw, 34px);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+    }
+
+    .meta-panel dl {
+      display: grid;
+      gap: 16px;
+      margin: 0;
+    }
+
+    .meta-panel dt {
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+    }
+
+    .meta-panel dd {
+      margin: 4px 0 0;
+      color: #384656;
+      line-height: 1.55;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(300px, 1.08fr);
+      gap: clamp(20px, 4vw, 56px);
+      align-items: center;
+    }
+
+    .body-copy {
+      max-width: 880px;
+      color: rgba(255, 248, 236, 0.84);
+      font-size: clamp(1rem, 1.65vw, 1.36rem);
+      line-height: 1.75;
+    }
+
+    .body-copy p + p { margin-top: 0.9em; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(12px, 1.6vw, 20px);
+    }
+
+    .card {
+      min-height: clamp(116px, 19vh, 190px);
+      padding: clamp(15px, 2vw, 24px);
+      color: var(--ink);
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 24px;
+      box-shadow: 0 14px 34px rgba(0,0,0,0.16);
+    }
+
+    .card h3 {
+      color: #1d3d48;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: #4c5968;
+      font-size: clamp(0.88rem, 1.16vw, 1.05rem);
+      line-height: 1.58;
+    }
+
+    .route-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(10px, 1.4vw, 18px);
+    }
+
+    .route {
+      min-height: clamp(106px, 17vh, 166px);
+      padding: clamp(14px, 1.7vw, 22px);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .route b {
+      display: block;
+      color: #fff8ec;
+      font-size: clamp(0.95rem, 1.35vw, 1.2rem);
+      margin-bottom: 8px;
+    }
+
+    .route span {
+      color: rgba(255, 248, 236, 0.74);
+      font-size: clamp(0.82rem, 1vw, 0.98rem);
+      line-height: 1.5;
+    }
+
+    .comparison {
+      width: min(100%, 1120px);
+      color: var(--ink);
+      background: var(--panel);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.16);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(0.72rem, 1vw, 0.94rem);
+      line-height: 1.35;
+    }
+
+    caption {
+      padding: 13px 16px;
+      text-align: left;
+      color: #324150;
+      font-weight: 800;
+      background: #f4e6d4;
+    }
+
+    th, td {
+      padding: clamp(7px, 1vw, 12px);
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(31, 41, 51, 0.12);
+    }
+
+    th {
+      color: #22313d;
+      background: rgba(231, 213, 189, 0.68);
+      font-weight: 800;
+    }
+
+    tr:last-child td,
+    tr:last-child th { border-bottom: 0; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: clamp(10px, 1.2vw, 18px);
+      align-items: stretch;
+    }
+
+    .timeline-item {
+      padding: clamp(14px, 1.8vw, 24px);
+      color: var(--ink);
+      background: var(--panel);
+      border-radius: 24px;
+      border-top: 6px solid var(--accent-2);
+    }
+
+    .timeline-item strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #1d3d48;
+      font-size: clamp(0.95rem, 1.25vw, 1.2rem);
+    }
+
+    .timeline-item span {
+      color: #4c5968;
+      font-size: clamp(0.8rem, 1vw, 0.98rem);
+      line-height: 1.52;
+    }
+
+    .quote {
+      max-width: 960px;
+      color: rgba(255, 248, 236, 0.9);
+      font-size: clamp(1.5rem, 3.8vw, 4.2rem);
+      line-height: 1.18;
+      letter-spacing: -0.05em;
+    }
+
+    .refs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .refs a {
+      display: block;
+      min-height: 44px;
+      padding: 11px 14px;
+      color: #163a45;
+      text-decoration: none;
+      border: 1px solid rgba(31, 41, 51, 0.12);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.56);
+      font-size: clamp(0.8rem, 1vw, 0.95rem);
+      line-height: 1.35;
+    }
+
+    .slide-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 34px;
+      color: rgba(255, 248, 236, 0.58);
+      font-size: clamp(0.75rem, 1vw, 0.92rem);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 20;
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 240ms ease;
+    }
+
+    .controls {
+      position: fixed;
+      right: clamp(14px, 2vw, 24px);
+      bottom: clamp(14px, 2vw, 24px);
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 999px;
+      background: rgba(12, 18, 24, 0.68);
+      backdrop-filter: blur(14px);
+    }
+
+    .controls button,
+    .menu-toggle {
+      min-width: 44px;
+      min-height: 44px;
+      color: var(--light);
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .controls button:hover,
+    .menu-toggle:hover { background: rgba(255,255,255,0.18); }
+
+    .counter {
+      min-width: 76px;
+      color: rgba(255,248,236,0.86);
+      text-align: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+    }
+
+    .menu-toggle {
+      position: fixed;
+      top: clamp(14px, 2vw, 24px);
+      right: clamp(14px, 2vw, 24px);
+      z-index: 31;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 40;
+      width: min(360px, calc(100vw - 28px));
+      height: 100vh;
+      height: 100dvh;
+      padding: 24px;
+      background: rgba(14, 20, 27, 0.94);
+      border-left: 1px solid rgba(255,255,255,0.14);
+      box-shadow: -24px 0 70px rgba(0,0,0,0.36);
+      transform: translateX(105%);
+      transition: transform 260ms ease;
+      backdrop-filter: blur(18px);
+    }
+
+    .drawer.open { transform: translateX(0); }
+
+    .drawer header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .drawer h2 {
+      font-size: 1.15rem;
+      letter-spacing: 0;
+      max-width: none;
+      line-height: 1.2;
+    }
+
+    .drawer ol {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .drawer button {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      color: rgba(255,248,236,0.78);
+      text-align: left;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      cursor: pointer;
+    }
+
+    .drawer button[aria-current="true"] {
+      color: #fff;
+      border-color: rgba(103, 195, 208, 0.68);
+      background: rgba(103, 195, 208, 0.16);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 920px) {
+      .slide { padding: clamp(18px, 5vw, 36px); }
+      .title-grid,
+      .two-col { grid-template-columns: 1fr; gap: 22px; }
+      .big-number { display: none; }
+      .cards,
+      .route-list,
+      .timeline,
+      .refs { grid-template-columns: 1fr; }
+      .route-list { gap: 8px; }
+      .route { min-height: auto; }
+      .card { min-height: auto; }
+      .comparison { max-height: 70vh; overflow: hidden; }
+      table { font-size: clamp(0.58rem, 1.8vw, 0.76rem); }
+      th, td { padding: 6px; }
+    }
+
+    @media (max-width: 520px) {
+      .slide { gap: 10px; }
+      h1 { font-size: clamp(2.7rem, 15vw, 4.8rem); }
+      h2 { font-size: clamp(2rem, 12vw, 3.6rem); }
+      .lead, .body-copy { font-size: 0.98rem; line-height: 1.55; }
+      .meta-panel, .glass-panel { padding: 16px; }
+      .slide-foot { display: none; }
+      .controls { left: 50%; right: auto; transform: translateX(-50%); }
+      .menu-toggle { top: 10px; right: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @media print {
+      body { overflow: visible; background: #fff; color: #000; }
+      .deck, .slides { height: auto; overflow: visible; }
+      .slide {
+        position: relative;
+        display: block;
+        page-break-after: always;
+        height: 100vh;
+        opacity: 1;
+        transform: none;
+        color: #000;
+      }
+      .controls, .menu-toggle, .drawer, .progress { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+  <button class="menu-toggle" id="menuToggle" type="button" aria-controls="slideDrawer" aria-expanded="false" aria-label="打开幻灯片目录">☰</button>
+
+  <aside class="drawer" id="slideDrawer" aria-label="幻灯片目录" aria-hidden="true" inert>
+    <header>
+      <h2>幻灯片目录</h2>
+      <button type="button" id="closeDrawer" aria-label="关闭目录">关闭</button>
+    </header>
+    <ol id="slideList"></ol>
+  </aside>
+
+  <main class="deck" id="deck" tabindex="-1">
+    <div class="slides">
+      <section class="slide active" data-title="封面" aria-label="封面">
+        <div class="slide-kicker">In-process Isolation</div>
+        <div class="slide-body title-grid">
+          <div>
+            <h1>进程内隔离核心脉络</h1>
+            <p class="lead">在同一个地址空间内，为不可信代码、第三方库和高风险运行时组件建立更轻的边界。</p>
+          </div>
+          <div class="meta-panel">
+            <dl>
+              <div><dt>主题</dt><dd>进程内隔离技术的演进、机制与取舍</dd></div>
+              <div><dt>资料范围</dt><dd>SFI、NaCl、MPK、ERIM、Hodor、CHERI、ArmMTE、WebAssembly、TRust</dd></div>
+              <div><dt>报告日期</dt><dd>2026年6月</dd></div>
+            </dl>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>使用 ← / →、空格、滚轮或滑动翻页</span><span>01</span></footer>
+      </section>
+
+      <section class="slide" data-title="问题背景" aria-label="问题背景">
+        <div class="slide-kicker">Problem</div>
+        <div class="slide-body two-col">
+          <div>
+            <h2>为什么不是只用进程隔离？</h2>
+            <p class="lead">进程边界安全清楚，但高频跨边界调用需要内核介入，系统软件常常承担不起这个代价。</p>
+          </div>
+          <div class="body-copy">
+            <p>浏览器插件、图片解析器、压缩库、加密库、网络协议栈、JIT运行时、数据库扩展、Rust中的unsafe代码和FFI代码，往往都与主程序运行在同一进程中。</p>
+            <p>一旦其中某个组件被攻破，攻击者可能读写整个进程的内存。进程内隔离的目标，是在保留调用效率的同时限制破坏范围。</p>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>问题背景</span><span>02</span></footer>
+      </section>
+
+      <section class="slide" data-title="核心定义" aria-label="核心定义">
+        <div class="slide-kicker">Definition</div>
+        <div class="slide-body">
+          <h2>一个地址空间，多个受控访问域</h2>
+          <div class="cards" style="margin-top: clamp(18px, 4vh, 34px);">
+            <article class="card"><h3>隔离对象</h3><p>保护谁、限制谁：密钥、堆对象、栈对象、运行时元数据、语言安全域、插件状态和请求上下文。</p></article>
+            <article class="card"><h3>隔离边界</h3><p>边界可以是库、语言、函数、线程、对象或请求。边界越细，扩散范围越小，管理成本越高。</p></article>
+            <article class="card"><h3>执行机制</h3><p>由软件插桩、二进制验证、页权限、CPU寄存器、能力指针、内存标签或虚拟机运行时执行。</p></article>
+            <article class="card"><h3>边界协议</h3><p>处理参数复制、指针传递、权限切换、返回值检查、异常处理和状态恢复。</p></article>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>核心定义</span><span>03</span></footer>
+      </section>
+
+      <section class="slide" data-title="技术路线" aria-label="主要技术路线">
+        <div class="slide-kicker">Map</div>
+        <div class="slide-body">
+          <h2>六条路线，不同边界表达能力</h2>
+          <div class="route-list" style="margin-top: clamp(18px, 4vh, 34px);">
+            <div class="route"><b>SFI</b><span>指令改写、地址掩码、二进制验证；不依赖特殊硬件，但有指令开销。</span></div>
+            <div class="route"><b>MPK / PKU</b><span>页绑定pkey，线程用PKRU切换权限；快，但key数量少。</span></div>
+            <div class="route"><b>CHERI</b><span>指针携带边界和权限；粒度细，但需要硬件和系统栈支持。</span></div>
+            <div class="route"><b>ArmMTE</b><span>指针标签与内存标签匹配；更偏检测，不是完整隔离。</span></div>
+            <div class="route"><b>WebAssembly</b><span>线性内存、边界检查、宿主API控制；适合模块级沙箱。</span></div>
+            <div class="route"><b>进程级IPC</b><span>独立地址空间和RPC；边界强，但高频交互开销高。</span></div>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>主要技术路线</span><span>04</span></footer>
+      </section>
+
+      <section class="slide" data-title="SFI" aria-label="SFI路线">
+        <div class="slide-kicker">SFI</div>
+        <div class="slide-body two-col">
+          <div>
+            <h2>从软件检查开始</h2>
+            <p class="lead">SFI证明了同一地址空间内也可以限制不可信代码。</p>
+          </div>
+          <div class="glass-panel body-copy">
+            <p>Wahbe等人在1993年提出对不可信代码进行改写，让内存访问被限制在指定地址范围内。常见技术包括地址掩码、指令检查、控制流约束和二进制验证。</p>
+            <p>Google Native Client把类似思想用于浏览器环境。它的不足是软件检查会带来额外指令，二进制验证也与具体ISA绑定。</p>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>SFI路线</span><span>05</span></footer>
+      </section>
+
+      <section class="slide" data-title="MPK" aria-label="MPK路线">
+        <div class="slide-kicker">MPK / PKU</div>
+        <div class="slide-body two-col">
+          <div>
+            <h2>把权限切换交给硬件</h2>
+            <p class="lead">内存页绑定protection key，线程通过PKRU寄存器控制访问权限。</p>
+          </div>
+          <div class="glass-panel body-copy">
+            <p>MPK切换权限不需要切换页表。ERIM在每秒10万次切换场景下开销低于1%；Hodor将MPK用于高吞吐数据平面库，每核可支持约230万次library entrance每秒。</p>
+            <p>局限也明确：WRPKRU是用户态指令，需要防滥用；x86上通常只有16个key；PKRU是线程本地状态，多线程程序需要额外协调。</p>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>MPK路线</span><span>06</span></footer>
+      </section>
+
+      <section class="slide" data-title="CHERI" aria-label="CHERI路线">
+        <div class="slide-kicker">CHERI</div>
+        <div class="slide-body two-col">
+          <div>
+            <h2>把权限放进指针</h2>
+            <p class="lead">能力指针携带基址、长度、权限和有效性。</p>
+          </div>
+          <div class="glass-panel body-copy">
+            <p>CHERI不像MPK那样给内存页打key，而是让指针本身携带权限和边界。它更适合对象级、结构级和模块级保护。</p>
+            <p>代价是生态要求高：ISA扩展、硬件支持、编译器、操作系统和库都要适配。Morello提供了实验平台，但大规模部署仍有距离。</p>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>CHERI路线</span><span>07</span></footer>
+      </section>
+
+      <section class="slide" data-title="ArmMTE" aria-label="ArmMTE路线">
+        <div class="slide-kicker">ArmMTE</div>
+        <div class="slide-body two-col">
+          <div>
+            <h2>检测，而非完整隔离</h2>
+            <p class="lead">指针标签与内存标签匹配，用于发现use-after-free和buffer-overflow等问题。</p>
+          </div>
+          <div class="glass-panel body-copy">
+            <p>MTE更像低开销内存错误检测和缓解机制。它能帮助发现越界访问、悬挂指针访问。</p>
+            <p>由于标签位有限，标签碰撞会带来概率性漏检。因此它适合作为补充，不能单独承担强隔离边界。</p>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>ArmMTE路线</span><span>08</span></footer>
+      </section>
+
+      <section class="slide" data-title="WebAssembly" aria-label="WebAssembly路线">
+        <div class="slide-kicker">WebAssembly</div>
+        <div class="slide-body two-col">
+          <div>
+            <h2>模块级沙箱</h2>
+            <p class="lead">Wasm模块不能直接访问宿主内部状态，只能通过宿主暴露的API与外界交互。</p>
+          </div>
+          <div class="glass-panel body-copy">
+            <p>Wasm的线性内存是独立的、零初始化的，并有固定最大大小和边界检查。C、C++、Rust等语言都可以编译到Wasm。</p>
+            <p>局限是模块内部的线性内存仍然可能被模块自身漏洞破坏。Wasm适合做模块沙箱，但不自动修复模块内部的C/C++内存错误。</p>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>WebAssembly路线</span><span>09</span></footer>
+      </section>
+
+      <section class="slide" data-title="综合对比" aria-label="综合对比">
+        <div class="slide-kicker">Compare</div>
+        <div class="slide-body">
+          <h2>没有一种机制同时满足所有目标</h2>
+          <div class="comparison" style="margin-top: clamp(16px, 3vh, 28px);">
+            <table>
+              <caption>SFI、MPK、CHERI、ArmMTE、WebAssembly与进程隔离对比</caption>
+              <thead><tr><th scope="col">维度</th><th scope="col">SFI</th><th scope="col">MPK</th><th scope="col">CHERI</th><th scope="col">MTE</th><th scope="col">Wasm</th><th scope="col">进程</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">粒度</th><td>指令/模块</td><td>页/域</td><td>指针/对象</td><td>对象标签</td><td>模块/线性内存</td><td>进程</td></tr>
+                <tr><th scope="row">切换</th><td>中</td><td>低</td><td>低</td><td>低</td><td>中低</td><td>高</td></tr>
+                <tr><th scope="row">依赖</th><td>低</td><td>MPK/PKU</td><td>CHERI硬件</td><td>ArmMTE</td><td>低到中</td><td>低</td></tr>
+                <tr><th scope="row">能力</th><td>中</td><td>中</td><td>高</td><td>偏检测</td><td>中</td><td>低到中</td></tr>
+                <tr><th scope="row">场景</th><td>浏览器插件</td><td>高频库调用</td><td>细粒度隔离</td><td>UAF/越界检测</td><td>跨语言沙箱</td><td>强隔离低频交互</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>综合对比</span><span>10</span></footer>
+      </section>
+
+      <section class="slide" data-title="研究趋势" aria-label="研究趋势">
+        <div class="slide-kicker">Trends</div>
+        <div class="slide-body">
+          <h2>后续研究的五个方向</h2>
+          <div class="timeline" style="margin-top: clamp(16px, 3vh, 30px);">
+            <div class="timeline-item"><strong>更细边界</strong><span>从库级、函数级走向对象级、请求级和租户级。</span></div>
+            <div class="timeline-item"><strong>硬件与语言结合</strong><span>把Rust所有权、C/C++对象边界、Wasm组件模型转化为硬件权限。</span></div>
+            <div class="timeline-item"><strong>边界净化</strong><span>在边界检查参数、指针和对象状态，让错误更早暴露。</span></div>
+            <div class="timeline-item"><strong>故障恢复</strong><span>支持沙箱级重启、状态回滚、请求级隔离和错误传播。</span></div>
+            <div class="timeline-item"><strong>可验证TCB</strong><span>验证编译器、验证器、运行时和硬件模型。</span></div>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>研究趋势</span><span>11</span></footer>
+      </section>
+
+      <section class="slide" data-title="结论" aria-label="结论">
+        <div class="slide-kicker">Conclusion</div>
+        <div class="slide-body">
+          <p class="quote">进程内隔离的核心矛盾仍然是边界、性能和可用性。</p>
+          <p class="lead" style="max-width: 900px;">边界越细，安全收益越大；边界越细，切换、复制、恢复和验证成本也越高。好的系统不是“隔得越多越好”，而是根据威胁模型，把最危险、最频繁、最有价值的数据和代码放在合适边界之后。</p>
+        </div>
+        <footer class="slide-foot"><span>结论</span><span>12</span></footer>
+      </section>
+
+      <section class="slide" data-title="参考资料" aria-label="参考资料">
+        <div class="slide-kicker">References</div>
+        <div class="slide-body">
+          <h2>参考资料</h2>
+          <ul class="refs" style="margin-top: clamp(14px, 3vh, 28px);">
+            <li><a href="https://www.usenix.org/conference/usenixsecurity19/presentation/vahldiek-oberwagner">ERIM: Secure, Efficient In-process Isolation with Protection Keys</a></li>
+            <li><a href="https://www.usenix.org/conference/atc19/presentation/hedayati-hodor">Hodor: Intra-Process Isolation for High-Throughput Data Plane Libraries</a></li>
+            <li><a href="https://www.kernel.org/doc/html/latest/core-api/protection-keys.html">Linux Kernel Documentation: Memory Protection Keys</a></li>
+            <li><a href="https://cs155.stanford.edu/papers/sfi.pdf">Efficient Software-Based Fault Isolation</a></li>
+            <li><a href="https://research.google.com/pubs/archive/34913.pdf">Native Client: A Sandbox for Portable, Untrusted x86 Native Code</a></li>
+            <li><a href="https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/">CHERI project, University of Cambridge</a></li>
+            <li><a href="https://developer.arm.com/documentation/108035/0100/Introduction-to-the-Memory-Tagging-Extension">Arm Memory Tagging Extension documentation</a></li>
+            <li><a href="https://source.android.com/docs/security/test/memory-safety/arm-mte">Android Arm Memory Tagging Extension documentation</a></li>
+            <li><a href="https://webassembly.org/docs/security/">WebAssembly Security Model</a></li>
+            <li><a href="https://www.usenix.org/conference/usenixsecurity23/presentation/bang">TRust: In-process Isolation to Protect Safe Rust</a></li>
+          </ul>
+        </div>
+        <footer class="slide-foot"><span>参考资料</span><span>13</span></footer>
+      </section>
+    </div>
+  </main>
+
+  <div class="controls" role="group" aria-label="幻灯片控制">
+    <button type="button" id="prevBtn" aria-label="上一页">←</button>
+    <div class="counter" id="counter" aria-live="polite">01 / 13</div>
+    <button type="button" id="nextBtn" aria-label="下一页">→</button>
+  </div>
+
+  <p class="sr-only" id="hint">可使用左右方向键、空格、鼠标滚轮或触控滑动切换幻灯片。</p>
+  <p class="sr-only" id="slideStatus" aria-live="polite"></p>
+
+  <script>
+    class SlideDeck {
+      constructor() {
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.index = 0;
+        this.lastWheel = 0;
+        this.touchStartX = 0;
+        this.touchStartY = 0;
+        this.counter = document.getElementById('counter');
+        this.progress = document.getElementById('progressBar');
+        this.drawer = document.getElementById('slideDrawer');
+        this.menuToggle = document.getElementById('menuToggle');
+        this.closeDrawerButton = document.getElementById('closeDrawer');
+        this.slideList = document.getElementById('slideList');
+        this.status = document.getElementById('slideStatus');
+        this.buildMenu();
+        this.bind();
+        this.go(this.initialIndex(), false);
+      }
+
+      initialIndex() {
+        const target = Number(location.hash.replace('#', '')) - 1;
+        return Number.isNaN(target) ? 0 : target;
+      }
+
+      buildMenu() {
+        this.slideList.innerHTML = '';
+        this.slides.forEach((slide, idx) => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = `${String(idx + 1).padStart(2, '0')} · ${slide.dataset.title || 'Slide'}`;
+          btn.addEventListener('click', () => {
+            this.go(idx);
+            this.toggleDrawer(false);
+          });
+          li.appendChild(btn);
+          this.slideList.appendChild(li);
+        });
+      }
+
+      bind() {
+        document.getElementById('prevBtn').addEventListener('click', () => this.prev());
+        document.getElementById('nextBtn').addEventListener('click', () => this.next());
+        this.menuToggle.addEventListener('click', () => this.toggleDrawer());
+        this.closeDrawerButton.addEventListener('click', () => this.toggleDrawer(false));
+
+        window.addEventListener('keydown', (event) => {
+          const key = event.key;
+          const drawerOpen = this.drawer.classList.contains('open');
+
+          if (drawerOpen && key !== 'Escape') return;
+
+          if (this.isInteractiveTarget(event.target) && (key === ' ' || key === 'Enter')) {
+            return;
+          }
+
+          if (key === 'ArrowRight' || key === 'PageDown' || key === ' ') {
+            event.preventDefault();
+            this.next();
+          } else if (key === 'ArrowLeft' || key === 'PageUp') {
+            event.preventDefault();
+            this.prev();
+          } else if (key === 'Home') {
+            event.preventDefault();
+            this.go(0);
+          } else if (key === 'End') {
+            event.preventDefault();
+            this.go(this.slides.length - 1);
+          } else if (key === 'Escape') {
+            this.toggleDrawer(false);
+          } else if (key.toLowerCase() === 'o') {
+            this.toggleDrawer();
+          }
+        });
+
+        window.addEventListener('wheel', (event) => {
+          const now = Date.now();
+          if (now - this.lastWheel < 620 || Math.abs(event.deltaY) < 18) return;
+          this.lastWheel = now;
+          event.deltaY > 0 ? this.next() : this.prev();
+        }, { passive: true });
+
+        window.addEventListener('touchstart', (event) => {
+          const touch = event.changedTouches[0];
+          this.touchStartX = touch.clientX;
+          this.touchStartY = touch.clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (event) => {
+          const touch = event.changedTouches[0];
+          const dx = touch.clientX - this.touchStartX;
+          const dy = touch.clientY - this.touchStartY;
+          if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) {
+            dx < 0 ? this.next() : this.prev();
+          }
+        }, { passive: true });
+
+        window.addEventListener('hashchange', () => {
+          const target = Number(location.hash.replace('#', '')) - 1;
+          if (!Number.isNaN(target)) this.go(target, false);
+        });
+      }
+
+      isInteractiveTarget(target) {
+        if (!(target instanceof Element)) return false;
+        return Boolean(target.closest('button, a, input, textarea, select, summary, [role="button"], [role="link"], [contenteditable="true"]'));
+      }
+
+      toggleDrawer(force) {
+        const shouldOpen = typeof force === 'boolean' ? force : !this.drawer.classList.contains('open');
+        this.drawer.classList.toggle('open', shouldOpen);
+        this.drawer.setAttribute('aria-hidden', String(!shouldOpen));
+        this.drawer.toggleAttribute('inert', !shouldOpen);
+        this.menuToggle.setAttribute('aria-expanded', String(shouldOpen));
+        if (shouldOpen) {
+          this.closeDrawerButton.focus();
+        } else {
+          this.menuToggle.focus();
+        }
+      }
+
+      next() { this.go(this.index + 1); }
+      prev() { this.go(this.index - 1); }
+
+      go(nextIndex, updateHash = true) {
+        const clamped = Math.max(0, Math.min(this.slides.length - 1, nextIndex));
+        this.index = clamped;
+        this.slides.forEach((slide, idx) => {
+          slide.classList.toggle('active', idx === this.index);
+          slide.classList.toggle('prev', idx < this.index);
+          slide.setAttribute('aria-hidden', String(idx !== this.index));
+          slide.toggleAttribute('inert', idx !== this.index);
+        });
+
+        const current = String(this.index + 1).padStart(2, '0');
+        const total = String(this.slides.length).padStart(2, '0');
+        this.counter.textContent = `${current} / ${total}`;
+        this.status.textContent = `当前第 ${this.index + 1} 页，共 ${this.slides.length} 页：${this.slides[this.index].dataset.title || 'Slide'}`;
+        this.progress.style.width = `${((this.index + 1) / this.slides.length) * 100}%`;
+        document.title = `${this.slides[this.index].dataset.title || 'Slide'} · 进程内隔离核心脉络报告`;
+
+        Array.from(this.slideList.querySelectorAll('button')).forEach((btn, idx) => {
+          btn.setAttribute('aria-current', String(idx === this.index));
+        });
+
+        if (updateHash) {
+          history.replaceState(null, '', `#${this.index + 1}`);
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => new SlideDeck());
+  </script>
+</body>
+</html>

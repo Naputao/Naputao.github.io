@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRust · 机制深析 · Neon Cyber 演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%;
+  overflow: hidden;
+  position: fixed; top: 0; left: 0;
+}
+
+.deck {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh; height: 100dvh;
+  transition: transform 0.7s cubic-bezier(0.7, 0, 0.25, 1);
+  will-change: transform;
+}
+
+:root {
+  --title-size: clamp(1.3rem, 3.8vw, 3rem);
+  --h2-size: clamp(1.05rem, 2.6vw, 1.9rem);
+  --h3-size: clamp(0.85rem, 1.8vw, 1.3rem);
+  --body-size: clamp(0.7rem, 1.05vw, 0.92rem);
+  --small-size: clamp(0.6rem, 0.85vw, 0.78rem);
+  --tiny-size: clamp(0.55rem, 0.75vw, 0.7rem);
+  --code-size: clamp(0.6rem, 0.9vw, 0.78rem);
+
+  --slide-padding: clamp(0.75rem, 2.5vw, 2.5rem);
+  --content-gap: clamp(0.4rem, 1.2vw, 1.2rem);
+  --element-gap: clamp(0.2rem, 0.6vw, 0.6rem);
+
+  --bg-deep: #060818;
+  --bg-mid: #0c1230;
+  --bg-card: rgba(20, 30, 70, 0.55);
+  --grid-line: rgba(110, 200, 255, 0.08);
+  --cyan: #5ce1ff;
+  --cyan-dim: #4099b5;
+  --magenta: #ff5edb;
+  --yellow: #f7d046;
+  --green: #6ef0a0;
+  --red: #ff6b6b;
+  --text: #e6f1ff;
+  --text-dim: #8ea0c4;
+  --border: rgba(92, 225, 255, 0.18);
+  --border-strong: rgba(92, 225, 255, 0.4);
+}
+
+body {
+  background: var(--bg-deep); color: var(--text);
+  font-family: 'Noto Sans SC', 'Space Grotesk', -apple-system, sans-serif;
+  font-size: var(--body-size); line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  width: 100vw; height: 100vh; height: 100dvh;
+  overflow: hidden; display: flex; flex-direction: column;
+  position: relative; flex-shrink: 0;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(92, 225, 255, 0.08), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(255, 94, 219, 0.06), transparent 55%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 100%);
+}
+
+.slide::before {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: clamp(40px, 4vw, 80px) clamp(40px, 4vw, 80px);
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+.slide-content {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; max-height: 100%; overflow: hidden;
+  padding: var(--slide-padding); position: relative; z-index: 2;
+}
+
+.chrome { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.brand { position: absolute; top: clamp(0.5rem, 1.5vh, 1rem); left: clamp(0.8rem, 2.5vw, 1.5rem); font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--cyan-dim); letter-spacing: 0.2em; text-transform: uppercase; }
+.brand .dot { display: inline-block; width: 0.5em; height: 0.5em; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); margin-right: 0.4em; animation: pulse 2s ease-in-out infinite; }
+.page-num { position: absolute; top: clamp(0.5rem, 1.5vh, 1rem); right: clamp(0.8rem, 2.5vw, 1.5rem); font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--cyan-dim); letter-spacing: 0.15em; }
+.page-num span { color: var(--cyan); }
+.tag-line { position: absolute; bottom: clamp(0.5rem, 1.5vh, 1rem); left: clamp(0.8rem, 2.5vw, 1.5rem); font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--text-dim); letter-spacing: 0.1em; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+
+.eyebrow { font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--cyan); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.3em; display: inline-flex; align-items: center; gap: 0.5em; }
+.eyebrow::before { content: ''; width: clamp(20px, 3vw, 40px); height: 1px; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+
+h1 { font-size: var(--title-size); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em; }
+h2 { font-size: var(--h2-size); font-weight: 700; line-height: 1.15; margin-bottom: 0.4em; letter-spacing: -0.01em; }
+h3 { font-size: var(--h3-size); font-weight: 600; line-height: 1.2; }
+
+.glow-text { background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+p { color: var(--text-dim); }
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 0.5em; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 0.5em; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 0.4em; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); backdrop-filter: blur(12px); border-radius: clamp(6px, 0.8vw, 10px); padding: clamp(0.5rem, 1.2vw, 1rem); position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: 0.6; }
+.card .num { font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--cyan); letter-spacing: 0.1em; margin-bottom: 0.3em; }
+.card h4 { font-size: var(--body-size); font-weight: 600; margin-bottom: 0.3em; color: var(--text); }
+.card p { font-size: var(--small-size); color: var(--text-dim); line-height: 1.5; }
+
+ul.tech-list { list-style: none; display: flex; flex-direction: column; gap: 0.3em; }
+ul.tech-list li { position: relative; padding-left: 1.2em; font-size: var(--small-size); color: var(--text); line-height: 1.5; }
+ul.tech-list li::before { content: '▸'; position: absolute; left: 0; color: var(--cyan); font-weight: 700; }
+
+table.cyber { width: 100%; border-collapse: collapse; font-size: var(--small-size); }
+table.cyber th, table.cyber td { padding: 0.4em 0.6em; text-align: left; border-bottom: 1px solid var(--border); }
+table.cyber th { font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.1em; background: rgba(92, 225, 255, 0.05); }
+table.cyber td { color: var(--text); }
+table.cyber .ok { color: var(--green); font-weight: 700; }
+table.cyber .bad { color: var(--magenta); font-weight: 700; }
+table.cyber .warn { color: var(--yellow); font-weight: 700; }
+
+.code-frame { background: rgba(6, 8, 24, 0.7); border: 1px solid var(--border); border-radius: clamp(4px, 0.6vw, 8px); padding: 0.7em 0.9em; font-family: 'JetBrains Mono', monospace; font-size: var(--code-size); line-height: 1.55; overflow: hidden; position: relative; }
+.code-frame::before { content: '● ● ●'; position: absolute; top: 0.3em; right: 0.6em; color: var(--text-dim); font-size: 0.5em; letter-spacing: 0.2em; }
+.code-title { font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--cyan); letter-spacing: 0.15em; margin-bottom: 0.3em; text-transform: uppercase; }
+
+.kw { color: var(--magenta); }
+.fn { color: var(--cyan); }
+.str { color: var(--yellow); }
+.cmt { color: var(--text-dim); font-style: italic; }
+.num-l { color: var(--cyan-dim); padding-right: 0.7em; user-select: none; }
+.hl { background: rgba(247,208,70,0.15); padding: 0 0.2em; border-radius: 2px; }
+.add { color: var(--green); }
+.rem { color: var(--magenta); }
+
+.badge { display: inline-flex; align-items: center; gap: 0.3em; padding: 0.15em 0.6em; background: rgba(92,225,255,0.1); border: 1px solid var(--border); border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--cyan); letter-spacing: 0.1em; }
+.badge.magenta { background: rgba(255,94,219,0.1); border-color: rgba(255,94,219,0.3); color: var(--magenta); }
+.badge.yellow { background: rgba(247,208,70,0.1); border-color: rgba(247,208,70,0.3); color: var(--yellow); }
+.badge.green { background: rgba(110,240,160,0.1); border-color: rgba(110,240,160,0.3); color: var(--green); }
+
+.stat { display: flex; flex-direction: column; gap: 0.1em; }
+.stat-num { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.3rem, 3.5vw, 2.5rem); font-weight: 700; line-height: 1; background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-label { font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+
+.flow-arrow { display: inline-block; color: var(--cyan); font-size: 1.2em; margin: 0 0.3em; }
+
+.bit-box { display: inline-block; min-width: 1.5em; padding: 0.15em 0.3em; margin: 0.1em; background: rgba(92,225,255,0.08); border: 1px solid var(--border); border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); text-align: center; color: var(--cyan); }
+.bit-box.ad { background: rgba(255,94,219,0.1); border-color: rgba(255,94,219,0.3); color: var(--magenta); }
+.bit-box.wd { background: rgba(247,208,70,0.1); border-color: rgba(247,208,70,0.3); color: var(--yellow); }
+
+.nav-controls { position: fixed; bottom: clamp(0.5rem, 1.5vh, 1rem); right: clamp(0.8rem, 2.5vw, 1.5rem); display: flex; gap: 0.4em; z-index: 100; font-family: 'JetBrains Mono', monospace; font-size: var(--tiny-size); }
+.nav-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--cyan); padding: 0.4em 0.8em; border-radius: 5px; cursor: pointer; letter-spacing: 0.1em; transition: all 0.2s ease; backdrop-filter: blur(10px); }
+.nav-btn:hover { background: rgba(92,225,255,0.15); border-color: var(--cyan); box-shadow: 0 0 16px rgba(92,225,255,0.3); }
+
+.progress-bar { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, var(--cyan), var(--magenta)); z-index: 200; transition: width 0.3s ease; box-shadow: 0 0 8px var(--cyan); }
+
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-stagger > * { opacity: 0; transform: translateY(15px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal-stagger.visible > * { opacity: 1; transform: translateY(0); }
+.reveal-stagger.visible > *:nth-child(1) { transition-delay: 0.05s; }
+.reveal-stagger.visible > *:nth-child(2) { transition-delay: 0.12s; }
+.reveal-stagger.visible > *:nth-child(3) { transition-delay: 0.19s; }
+.reveal-stagger.visible > *:nth-child(4) { transition-delay: 0.26s; }
+.reveal-stagger.visible > *:nth-child(5) { transition-delay: 0.33s; }
+.reveal-stagger.visible > *:nth-child(6) { transition-delay: 0.4s; }
+
+.hero-glow { position: absolute; width: 60vw; height: 60vw; max-width: 800px; max-height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(92,225,255,0.18) 0%, transparent 60%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(30px); pointer-events: none; }
+
+/* ===== ANIMATED DIAGRAMS ===== */
+.diagram { width: 100%; max-width: 100%; height: auto; }
+
+.slide.visible .anim-flow { animation: flowPath 3s ease-in-out infinite; }
+@keyframes flowPath { 0% { stroke-dashoffset: 100; } 100% { stroke-dashoffset: 0; } }
+
+.slide.visible .anim-pulse { animation: nodePulse 2s ease-in-out infinite; }
+@keyframes nodePulse { 0%, 100% { opacity: 1; transform: scale(1); transform-origin: center; } 50% { opacity: 0.6; transform: scale(1.1); } }
+
+.slide.visible .anim-blink { animation: blink 1.5s ease-in-out infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.slide.visible .anim-slide-x { animation: slideX 3s ease-in-out infinite; }
+@keyframes slideX { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(20px); } }
+
+.slide.visible .anim-flash { animation: flash 2s ease-in-out infinite; }
+@keyframes flash { 0%, 100% { fill: var(--cyan); } 50% { fill: var(--magenta); } }
+
+.slide.visible .anim-travel-1 { animation: travel 4s linear infinite; }
+.slide.visible .anim-travel-2 { animation: travel 4s linear infinite; animation-delay: 0.5s; }
+.slide.visible .anim-travel-3 { animation: travel 4s linear infinite; animation-delay: 1s; }
+.slide.visible .anim-travel-4 { animation: travel 4s linear infinite; animation-delay: 1.5s; }
+@keyframes travel {
+  0% { offset-distance: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+.slide.visible .anim-rotate { animation: rotate 8s linear infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.slide.visible .anim-grow { animation: grow 2s ease-in-out infinite; transform-origin: bottom; transform-box: fill-box; }
+@keyframes grow { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.15); } }
+
+.diagram-bit { transition: all 0.4s ease; }
+.slide.visible .diagram-bit.locked { fill: rgba(255,94,219,0.3); stroke: var(--magenta); }
+.slide.visible .diagram-bit.open { fill: rgba(110,240,160,0.3); stroke: var(--green); }
+
+/* token packets traveling along path */
+.packet { fill: var(--cyan); filter: drop-shadow(0 0 4px var(--cyan)); }
+.packet.magenta { fill: var(--magenta); filter: drop-shadow(0 0 4px var(--magenta)); }
+.packet.yellow { fill: var(--yellow); filter: drop-shadow(0 0 4px var(--yellow)); }
+.packet.green { fill: var(--green); filter: drop-shadow(0 0 4px var(--green)); }
+
+/* domain box flash */
+.domain-box { transition: all 0.6s ease; }
+.slide.visible .domain-active { fill: rgba(92,225,255,0.15); stroke: var(--cyan); stroke-width: 2; filter: drop-shadow(0 0 8px var(--cyan)); }
+.slide.visible .domain-locked { fill: rgba(255,94,219,0.05); stroke: var(--magenta); stroke-width: 1; opacity: 0.5; }
+
+.slide.visible .anim-toggle-domain { animation: toggleDomain 6s ease-in-out infinite; }
+@keyframes toggleDomain {
+  0%, 45% { fill: rgba(92,225,255,0.18); stroke: var(--cyan); }
+  50%, 95% { fill: rgba(255,94,219,0.18); stroke: var(--magenta); }
+  100% { fill: rgba(92,225,255,0.18); stroke: var(--cyan); }
+}
+
+.slide.visible .anim-toggle-unsafe { animation: toggleUnsafe 6s ease-in-out infinite; }
+@keyframes toggleUnsafe {
+  0%, 45% { fill: rgba(255,94,219,0.05); stroke: var(--magenta); opacity: 0.4; }
+  50%, 95% { fill: rgba(110,240,160,0.18); stroke: var(--green); opacity: 1; }
+  100% { fill: rgba(255,94,219,0.05); stroke: var(--magenta); opacity: 0.4; }
+}
+
+/* dashed traveling line */
+.flow-line { stroke-dasharray: 4 4; }
+.slide.visible .flow-line.active { animation: dashFlow 1.5s linear infinite; }
+@keyframes dashFlow { to { stroke-dashoffset: -16; } }
+
+/* sequence step highlight */
+.seq-step { transition: all 0.5s ease; }
+.slide.visible .seq-1 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 0s; }
+.slide.visible .seq-2 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 1s; }
+.slide.visible .seq-3 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 2s; }
+.slide.visible .seq-4 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 3s; }
+.slide.visible .seq-5 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 4s; }
+.slide.visible .seq-6 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 5s; }
+@keyframes seqHighlight {
+  0%, 16%, 100% { fill: var(--bg-card); stroke: var(--border); }
+  3%, 13% { fill: rgba(92,225,255,0.25); stroke: var(--cyan); filter: drop-shadow(0 0 8px var(--cyan)); }
+}
+
+.slide.visible .seq-back-1 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 0s; }
+.slide.visible .seq-back-2 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 1.2s; }
+.slide.visible .seq-back-3 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 2.4s; }
+.slide.visible .seq-back-4 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 3.6s; }
+.slide.visible .seq-back-5 { animation: seqHighlight 6s ease-in-out infinite; animation-delay: 4.8s; }
+
+.label-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--text); }
+.label-dim { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--text-dim); }
+.label-cyan { fill: var(--cyan); }
+.label-magenta { fill: var(--magenta); }
+.label-yellow { fill: var(--yellow); }
+.label-green { fill: var(--green); }
+.label-title { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; fill: var(--cyan); letter-spacing: 0.1em; }
+
+/* taint propagation animation */
+.slide.visible .taint-node-1 { animation: taintSpread 5s ease-in-out infinite; animation-delay: 0s; }
+.slide.visible .taint-node-2 { animation: taintSpread 5s ease-in-out infinite; animation-delay: 0.7s; }
+.slide.visible .taint-node-3 { animation: taintSpread 5s ease-in-out infinite; animation-delay: 1.4s; }
+.slide.visible .taint-node-4 { animation: taintSpread 5s ease-in-out infinite; animation-delay: 2.1s; }
+.slide.visible .taint-node-5 { animation: taintSpread 5s ease-in-out infinite; animation-delay: 2.8s; }
+@keyframes taintSpread {
+  0%, 8%, 100% { fill: var(--bg-card); stroke: var(--border); }
+  15%, 95% { fill: rgba(255,94,219,0.3); stroke: var(--magenta); filter: drop-shadow(0 0 6px var(--magenta)); }
+}
+
+/* page table flash */
+.page-row { transition: all 0.6s ease; }
+.slide.visible .page-flash-safe { animation: pageFlashSafe 4s ease-in-out infinite; }
+.slide.visible .page-flash-unsafe { animation: pageFlashUnsafe 4s ease-in-out infinite; animation-delay: 2s; }
+@keyframes pageFlashSafe {
+  0%, 40%, 100% { fill: rgba(92,225,255,0.08); stroke: var(--border); }
+  10%, 30% { fill: rgba(92,225,255,0.3); stroke: var(--cyan); filter: drop-shadow(0 0 6px var(--cyan)); }
+}
+@keyframes pageFlashUnsafe {
+  0%, 40%, 100% { fill: rgba(255,94,219,0.08); stroke: var(--border); }
+  10%, 30% { fill: rgba(255,94,219,0.3); stroke: var(--magenta); filter: drop-shadow(0 0 6px var(--magenta)); }
+}
+
+/* ===== COMPILE PIPELINE STAGE STATE (S3) ===== */
+#s3 .compile-stage {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+#s3 .compile-stage.is-visible { opacity: 1; }
+
+#s3 .pipeline-pass {
+  cursor: pointer;
+  outline: none;
+}
+#s3 .pipeline-pass-box {
+  fill: var(--bg-card);
+  stroke: var(--border);
+  transition: fill 0.28s ease, stroke 0.28s ease, filter 0.28s ease, transform 0.28s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+#s3 .pipeline-pass:hover .pipeline-pass-box,
+#s3 .pipeline-pass:focus .pipeline-pass-box {
+  stroke: var(--cyan);
+  filter: drop-shadow(0 0 6px rgba(92,225,255,0.35));
+}
+#s3 .pipeline-pass.is-done .pipeline-pass-box {
+  fill: rgba(110,240,160,0.12);
+  stroke: var(--green);
+}
+#s3 .pipeline-pass.is-active .pipeline-pass-box {
+  fill: rgba(247,208,70,0.28);
+  stroke: var(--yellow);
+  filter: drop-shadow(0 0 8px rgba(247,208,70,0.45));
+  transform: translateY(-1px);
+}
+#s3 .pass-label-primary,
+#s3 .pass-label-secondary {
+  transition: fill 0.28s ease, opacity 0.28s ease;
+  pointer-events: none;
+}
+#s3 .pipeline-pass.is-active .pass-label-primary,
+#s3 .pipeline-pass.is-active .pass-label-secondary {
+  fill: var(--yellow);
+}
+#s3 .pipeline-pass.is-done .pass-label-primary,
+#s3 .pipeline-pass.is-done .pass-label-secondary {
+  fill: var(--green);
+}
+
+#s3 .pipeline-progress {
+  stroke-dasharray: 710;
+  stroke-dashoffset: 710;
+  transition: stroke-dashoffset 0.4s ease;
+}
+#s3 .pipeline-progress-hit,
+#s3 .pipeline-progress-node {
+  cursor: pointer;
+}
+#s3 .pipeline-progress-hit {
+  fill: transparent;
+  stroke: none;
+}
+#s3 .pipeline-progress-node {
+  fill: var(--bg);
+  stroke: var(--border);
+  transition: fill 0.28s ease, stroke 0.28s ease, filter 0.28s ease;
+}
+#s3 .pipeline-progress-node.is-done {
+  fill: rgba(110,240,160,0.12);
+  stroke: var(--green);
+}
+#s3 .pipeline-progress-node.is-active {
+  fill: rgba(247,208,70,0.28);
+  stroke: var(--yellow);
+  filter: drop-shadow(0 0 6px rgba(247,208,70,0.45));
+}
+
+@media (max-height: 700px) {
+  :root { --slide-padding: clamp(0.5rem, 2vw, 1.5rem); --content-gap: 0.4em; --element-gap: 0.3em; --title-size: clamp(1.1rem, 4vw, 2.2rem); --h2-size: clamp(0.95rem, 2.4vw, 1.5rem); --body-size: clamp(0.65rem, 1vw, 0.85rem); }
+}
+
+@media (max-height: 600px) {
+  :root { --slide-padding: clamp(0.4rem, 1.5vw, 1rem); --body-size: clamp(0.6rem, 0.9vw, 0.78rem); --small-size: clamp(0.55rem, 0.75vw, 0.7rem); }
+  .brand, .tag-line { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+  .deck { transition-duration: 0.2s !important; }
+  .reveal, .reveal-stagger > * { opacity: 1 !important; transform: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" style="width:0"></div>
+
+<div class="deck" id="deck">
+
+<!-- ============== S1 · TITLE ============== -->
+<section class="slide" id="s1">
+  <div class="hero-glow"></div>
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>01</span> / 22</div>
+    <div class="tag-line">Press → / SPACE to navigate</div>
+  </div>
+  <div class="slide-content reveal-stagger" style="align-items:flex-start;">
+    <div class="eyebrow mono">USENIX Security 2023 · 进程内隔离 · 编译期机制</div>
+    <h1 style="margin-top:0.3em;"><span class="glow-text">TRust</span> 机制深析<br>
+      <span style="font-size:0.6em;color:var(--text);">把 <span class="mono" style="color:var(--magenta);">unsafe</span> 关进笼子的 12 个机制细节</span>
+    </h1>
+    <p style="font-size:var(--h3-size);max-width:65ch;margin-top:0.6em;color:var(--text);">
+      A Compilation Framework for In-process Isolation to Protect Safe Rust against Untrusted Code
+    </p>
+    <div style="margin-top:1.2em;display:flex;gap:0.4em;flex-wrap:wrap;">
+      <span class="badge">Intel MPK · 4-bit pkey · WRPKRU</span>
+      <span class="badge magenta">LLVM 14 + SVF Pass × 7</span>
+      <span class="badge yellow">mimalloc dual-heap · 双 SP</span>
+      <span class="badge green">Gate ~50ns · Snappy 20.5%</span>
+    </div>
+    <p class="mono" style="margin-top:1.2em;font-size:var(--small-size);letter-spacing:0.1em;color:var(--text-dim);">
+      Bang · Kayondo · Moon · Paek &nbsp;|&nbsp; Seoul National University + UNIST
+    </p>
+  </div>
+</section>
+
+<!-- ============== S2 · MOTIVATION COMPRESSED ============== -->
+<section class="slide" id="s2">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>02</span> / 22</div>
+    <div class="tag-line">Why · 为什么需要进程内隔离</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">问题陈述 · 一页讲清</div>
+    <h2>Rust 安全模型的<span class="glow-text">裂缝</span>，与 TRust 的工程答案</h2>
+    <div class="grid-2" style="gap:0.5em;">
+      <div class="card">
+        <div class="num">SAFE RUST · 闭环</div>
+        <p style="font-size:var(--small-size);">所有权 + 借用检查 + 生命周期 → 编译期消除 UAF/double-free/data race · MSRC：C/C++ 70% 高危漏洞被原理消除</p>
+      </div>
+      <div class="card" style="border-color:rgba(255,94,219,0.3);">
+        <div class="num" style="color:var(--magenta);">UNSAFE / FFI · 逃逸口</div>
+        <p style="font-size:var(--small-size);">裸指针 / 内联汇编 / extern "C" → 编译器投降 · 50%+ 高下载 crate 含 unsafe · std 自身依赖 unsafe</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:0.5em;background:rgba(110,240,160,0.05);border-color:rgba(110,240,160,0.3);">
+      <div class="num" style="color:var(--green);">TRust 的工程答案 · 三件套</div>
+      <p style="font-size:var(--body-size);color:var(--text);">
+        <strong style="color:var(--green);">硬件 MPK</strong>（页着色 + WRPKRU） +
+        <strong style="color:var(--green);">SVF Pass</strong>（编译期污染分析 × 7 阶段） +
+        <strong style="color:var(--green);">mimalloc 双堆 / SafeStack 双栈</strong>（物理隔离）
+        <br>= <strong style="color:var(--cyan);">让 untrusted 既不能读也不能写 Safe 域，且对开发者完全透明</strong>
+      </p>
+    </div>
+    <div class="grid-4" style="margin-top:0.5em;">
+      <div class="card" style="text-align:center;padding:0.4em;"><div class="stat-num">~50ns</div><div class="stat-label">单次切换</div></div>
+      <div class="card" style="text-align:center;padding:0.4em;"><div class="stat-num">20.5%</div><div class="stat-label">Snappy 压缩开销</div></div>
+      <div class="card" style="text-align:center;padding:0.4em;"><div class="stat-num">7×</div><div class="stat-label">优于 SDRaD-FFI</div></div>
+      <div class="card" style="text-align:center;padding:0.4em;"><div class="stat-num">60×</div><div class="stat-label">优于 Sandcrust</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S3 · ARCHITECTURE ============== -->
+<section class="slide" id="s3">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>03</span> / 22</div>
+    <div class="tag-line">Architecture · 编译器流水线</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">编译期 · 源代码经过 7 个 Pass 的实时演变</div>
+    <h2>编译器流水线 · <span class="glow-text">每一步源程序的变化</span></h2>
+    <svg class="diagram" viewBox="0 0 900 380" preserveAspectRatio="xMidYMid meet" style="max-height:62vh;">
+      <defs>
+        <marker id="arrPipe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--yellow)"/>
+        </marker>
+      </defs>
+
+      <!-- ===== TOP: Pipeline Bar (7 passes) ===== -->
+      <text x="20" y="20" class="label-title">编译流水线 · 7 阶段循环演示</text>
+
+      <!-- Pass boxes -->
+      <g transform="translate(20, 30)">
+        <g class="pipeline-pass" data-stage="1" tabindex="0" role="button" aria-label="Jump to pass 1 UnsafetyMarker">
+          <rect x="0" y="0" width="100" height="40" rx="6" class="pipeline-pass-box" stroke-width="1.5"/>
+          <text x="50" y="18" class="label-text label-cyan pass-label-primary" text-anchor="middle" font-size="11" font-weight="700">P1</text>
+          <text x="50" y="32" class="label-dim pass-label-secondary" text-anchor="middle" font-size="8">Marker</text>
+        </g>
+
+        <g class="pipeline-pass" data-stage="2" tabindex="0" role="button" aria-label="Jump to pass 2 SVFGBuilder">
+          <rect x="110" y="0" width="100" height="40" rx="6" class="pipeline-pass-box" stroke-width="1.5"/>
+          <text x="160" y="18" class="label-text label-cyan pass-label-primary" text-anchor="middle" font-size="11" font-weight="700">P2</text>
+          <text x="160" y="32" class="label-dim pass-label-secondary" text-anchor="middle" font-size="8">SVFG Build</text>
+        </g>
+
+        <g class="pipeline-pass" data-stage="3" tabindex="0" role="button" aria-label="Jump to pass 3 TaintPropagator">
+          <rect x="220" y="0" width="100" height="40" rx="6" class="pipeline-pass-box" stroke-width="1.5"/>
+          <text x="270" y="18" class="label-text label-cyan pass-label-primary" text-anchor="middle" font-size="11" font-weight="700">P3</text>
+          <text x="270" y="32" class="label-dim pass-label-secondary" text-anchor="middle" font-size="8">Taint Prop</text>
+        </g>
+
+        <g class="pipeline-pass" data-stage="4" tabindex="0" role="button" aria-label="Jump to pass 4 AllocRewriter">
+          <rect x="330" y="0" width="100" height="40" rx="6" class="pipeline-pass-box" stroke-width="1.5"/>
+          <text x="380" y="18" class="label-text label-cyan pass-label-primary" text-anchor="middle" font-size="11" font-weight="700">P4</text>
+          <text x="380" y="32" class="label-dim pass-label-secondary" text-anchor="middle" font-size="8">Alloc Rewrite</text>
+        </g>
+
+        <g class="pipeline-pass" data-stage="5" tabindex="0" role="button" aria-label="Jump to pass 5 StackSplitter">
+          <rect x="440" y="0" width="100" height="40" rx="6" class="pipeline-pass-box" stroke-width="1.5"/>
+          <text x="490" y="18" class="label-text label-cyan pass-label-primary" text-anchor="middle" font-size="11" font-weight="700">P5</text>
+          <text x="490" y="32" class="label-dim pass-label-secondary" text-anchor="middle" font-size="8">Stack Split</text>
+        </g>
+
+        <g class="pipeline-pass" data-stage="6" tabindex="0" role="button" aria-label="Jump to pass 6 GateInserter">
+          <rect x="550" y="0" width="100" height="40" rx="6" class="pipeline-pass-box" stroke-width="1.5"/>
+          <text x="600" y="18" class="label-text label-cyan pass-label-primary" text-anchor="middle" font-size="11" font-weight="700">P6</text>
+          <text x="600" y="32" class="label-dim pass-label-secondary" text-anchor="middle" font-size="8">Gate Insert</text>
+        </g>
+
+        <g class="pipeline-pass" data-stage="7" tabindex="0" role="button" aria-label="Jump to pass 7 WRPKRUScanner">
+          <rect x="660" y="0" width="100" height="40" rx="6" class="pipeline-pass-box" stroke-width="1.5"/>
+          <text x="710" y="18" class="label-text label-cyan pass-label-primary" text-anchor="middle" font-size="11" font-weight="700">P7</text>
+          <text x="710" y="32" class="label-dim pass-label-secondary" text-anchor="middle" font-size="8">WRPKRU Scan</text>
+        </g>
+
+        <!-- Final binary -->
+        <rect x="775" y="0" width="85" height="40" rx="6" fill="rgba(110,240,160,0.1)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="817" y="18" class="label-text label-green" text-anchor="middle" font-size="11" font-weight="700">.elf</text>
+        <text x="817" y="32" class="label-dim" text-anchor="middle" font-size="8">加固二进制</text>
+      </g>
+
+      <!-- Arrows between passes -->
+      <g stroke="var(--text-dim)" stroke-width="1" fill="none">
+        <line x1="120" y1="50" x2="130" y2="50" marker-end="url(#arrPipe)"/>
+        <line x1="230" y1="50" x2="240" y2="50" marker-end="url(#arrPipe)"/>
+        <line x1="340" y1="50" x2="350" y2="50" marker-end="url(#arrPipe)"/>
+        <line x1="450" y1="50" x2="460" y2="50" marker-end="url(#arrPipe)"/>
+        <line x1="560" y1="50" x2="570" y2="50" marker-end="url(#arrPipe)"/>
+        <line x1="670" y1="50" x2="680" y2="50" marker-end="url(#arrPipe)"/>
+        <line x1="775" y1="50" x2="785" y2="50" marker-end="url(#arrPipe)"/>
+      </g>
+
+      <!-- Progress indicator -->
+      <line x1="20" y1="80" x2="730" y2="80" stroke="var(--border)" stroke-width="1"/>
+      <line x1="20" y1="80" x2="730" y2="80" stroke="var(--yellow)" stroke-width="3" class="pipeline-progress"/>
+      <g>
+        <rect x="20" y="72" width="100" height="16" rx="8" class="pipeline-progress-hit" data-stage="1"/>
+        <rect x="130" y="72" width="100" height="16" rx="8" class="pipeline-progress-hit" data-stage="2"/>
+        <rect x="240" y="72" width="100" height="16" rx="8" class="pipeline-progress-hit" data-stage="3"/>
+        <rect x="350" y="72" width="100" height="16" rx="8" class="pipeline-progress-hit" data-stage="4"/>
+        <rect x="460" y="72" width="100" height="16" rx="8" class="pipeline-progress-hit" data-stage="5"/>
+        <rect x="570" y="72" width="100" height="16" rx="8" class="pipeline-progress-hit" data-stage="6"/>
+        <rect x="680" y="72" width="100" height="16" rx="8" class="pipeline-progress-hit" data-stage="7"/>
+      </g>
+      <g>
+        <circle cx="70" cy="80" r="4" class="pipeline-progress-node" data-stage="1" tabindex="0" role="button" aria-label="Jump to pass 1 on progress bar"/>
+        <circle cx="180" cy="80" r="4" class="pipeline-progress-node" data-stage="2" tabindex="0" role="button" aria-label="Jump to pass 2 on progress bar"/>
+        <circle cx="290" cy="80" r="4" class="pipeline-progress-node" data-stage="3" tabindex="0" role="button" aria-label="Jump to pass 3 on progress bar"/>
+        <circle cx="400" cy="80" r="4" class="pipeline-progress-node" data-stage="4" tabindex="0" role="button" aria-label="Jump to pass 4 on progress bar"/>
+        <circle cx="510" cy="80" r="4" class="pipeline-progress-node" data-stage="5" tabindex="0" role="button" aria-label="Jump to pass 5 on progress bar"/>
+        <circle cx="620" cy="80" r="4" class="pipeline-progress-node" data-stage="6" tabindex="0" role="button" aria-label="Jump to pass 6 on progress bar"/>
+        <circle cx="730" cy="80" r="4" class="pipeline-progress-node" data-stage="7" tabindex="0" role="button" aria-label="Jump to pass 7 on progress bar"/>
+      </g>
+
+      <!-- ===== MIDDLE: Source Code Display Area ===== -->
+      <rect x="20" y="100" width="860" height="270" rx="8" fill="rgba(6,8,24,0.7)" stroke="var(--border)"/>
+
+      <!-- Stage 0 (initial Rust source) - shown when no stage active. We'll show always behind, at low opacity. Then overlays for each stage. -->
+
+      <!-- ============ STAGE 1: P1 UnsafetyMarker ============ -->
+      <g class="compile-stage compile-stage-1">
+        <text x="40" y="125" class="label-title label-yellow">▶ P1 UnsafetyMarker · 注入污染源标签</text>
+        <text x="40" y="142" class="label-dim" font-size="10">输入：Rust 源码 + rustc fork 生成的 LLVM IR</text>
+
+        <!-- Rust source (left) -->
+        <text x="40" y="170" class="label-cyan" font-family="JetBrains Mono" font-size="11">// Rust 源码</text>
+        <text x="40" y="186" class="label-text" font-family="JetBrains Mono" font-size="11">fn demo() {</text>
+        <text x="40" y="202" class="label-text" font-family="JetBrains Mono" font-size="11">  let s = vec![0u8; 64];</text>
+        <text x="40" y="218" class="label-text" font-family="JetBrains Mono" font-size="11">  let slot = s;</text>
+        <text x="40" y="234" class="label-text" font-family="JetBrains Mono" font-size="11">  let b = vec![0u8; 256];</text>
+        <text x="40" y="250" class="label-text" font-family="JetBrains Mono" font-size="11">  let mut buf = [0u8; 256];</text>
+        <text x="40" y="266" class="label-text label-magenta" font-family="JetBrains Mono" font-size="11">  unsafe { openssl_decrypt(buf.as_mut_ptr(), b.as_ptr()) }</text>
+        <text x="40" y="282" class="label-text" font-family="JetBrains Mono" font-size="11">}</text>
+        <text x="40" y="298" class="label-text label-magenta" font-family="JetBrains Mono" font-size="11">extern "C" {</text>
+        <text x="40" y="314" class="label-text" font-family="JetBrains Mono" font-size="11">  fn openssl_decrypt(dst: *mut u8, src: *const u8);</text>
+        <text x="40" y="330" class="label-text label-magenta" font-family="JetBrains Mono" font-size="11">}</text>
+
+        <!-- LLVM IR with metadata (right) -->
+        <text x="460" y="170" class="label-green" font-family="JetBrains Mono" font-size="11">; LLVM IR · P1 注入 metadata</text>
+        <text x="460" y="186" class="label-text" font-family="JetBrains Mono" font-size="11">define @demo() {</text>
+        <text x="460" y="202" class="label-text" font-family="JetBrains Mono" font-size="11">  %s = call @__rust_alloc(64)</text>
+        <text x="460" y="218" class="label-text" font-family="JetBrains Mono" font-size="11">  store %s, %slot</text>
+        <text x="460" y="234" class="label-text" font-family="JetBrains Mono" font-size="11">  %b = call @__rust_alloc(256)</text>
+        <text x="460" y="250" class="label-text" font-family="JetBrains Mono" font-size="11">  %buf = alloca [256 x i8]</text>
+        <text x="460" y="266" class="label-text label-yellow" font-family="JetBrains Mono" font-size="11">  call @openssl_decrypt(%buf, %b) <tspan font-weight="700">!trust !{!"ffi"}</tspan></text>
+        <text x="460" y="282" class="label-text label-yellow" font-family="JetBrains Mono" font-size="11">  <tspan font-weight="700">!trust !{!"unsafe-block"}</tspan></text>
+        <text x="460" y="298" class="label-text" font-family="JetBrains Mono" font-size="11">declare @openssl_decrypt(i8* %buf, i8* %b)</text>
+
+        <text x="450" y="350" class="label-dim" text-anchor="middle" font-size="10">→ 5 类污染源在 IR 中获得 !trust 标签</text>
+      </g>
+
+      <!-- ============ STAGE 2: P2 SVFGBuilder ============ -->
+      <g class="compile-stage compile-stage-2">
+        <text x="40" y="125" class="label-title label-yellow">▶ P2 SVFGBuilder · 构建稀疏值流图</text>
+        <text x="40" y="142" class="label-dim" font-size="10">把 def / use / callsite 映射成节点，并连接跨过程值流边</text>
+
+        <!-- IR (left) -->
+        <text x="40" y="170" class="label-cyan" font-family="JetBrains Mono" font-size="11">; 含 metadata 的 IR</text>
+        <text x="40" y="186" class="label-text" font-family="JetBrains Mono" font-size="11">%s = call __rust_alloc(64)</text>
+        <text x="40" y="202" class="label-text" font-family="JetBrains Mono" font-size="11">store %s, %slot</text>
+        <text x="40" y="218" class="label-text" font-family="JetBrains Mono" font-size="11">%b = call __rust_alloc(256)</text>
+        <text x="40" y="234" class="label-text" font-family="JetBrains Mono" font-size="11">%buf = alloca [256 x i8]</text>
+        <text x="40" y="250" class="label-text" font-family="JetBrains Mono" font-size="11">call @openssl_decrypt(%buf, %b)</text>
+
+        <!-- SVFG graph (right) -->
+        <text x="500" y="160" class="label-green" font-family="JetBrains Mono" font-size="11">SVFG：def/use 节点 + interprocedural 边</text>
+
+        <!-- def nodes -->
+        <rect x="472" y="178" width="74" height="24" rx="6" fill="rgba(92,225,255,0.08)" stroke="var(--cyan)"/>
+        <text x="509" y="193" class="label-text label-cyan" text-anchor="middle" font-size="9">alloc(64)</text>
+        <rect x="612" y="178" width="80" height="24" rx="6" fill="rgba(255,94,219,0.08)" stroke="var(--magenta)"/>
+        <text x="652" y="193" class="label-text label-magenta" text-anchor="middle" font-size="9">alloc(256)</text>
+
+        <!-- value nodes -->
+        <circle cx="510" cy="235" r="16" fill="rgba(92,225,255,0.15)" stroke="var(--cyan)"/>
+        <text x="510" y="239" class="label-text label-cyan" text-anchor="middle" font-size="10">%s</text>
+        <circle cx="652" cy="235" r="16" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="652" y="239" class="label-text label-magenta" text-anchor="middle" font-size="10">%b</text>
+
+        <!-- use / callsite nodes -->
+        <rect x="470" y="278" width="92" height="26" rx="6" fill="rgba(247,208,70,0.12)" stroke="var(--yellow)"/>
+        <text x="516" y="294" class="label-text label-yellow" text-anchor="middle" font-size="9">store %s, %slot</text>
+        <circle cx="720" cy="235" r="16" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="720" y="239" class="label-text label-magenta" text-anchor="middle" font-size="10">%buf</text>
+        <rect x="674" y="276" width="190" height="30" rx="6" fill="rgba(255,94,219,0.12)" stroke="var(--magenta)"/>
+        <text x="769" y="289" class="label-text label-magenta" text-anchor="middle" font-size="9">call @openssl_decrypt(%buf, %b)</text>
+        <text x="769" y="301" class="label-dim" text-anchor="middle" font-size="8">跨过程 callsite node</text>
+
+        <!-- edges -->
+        <line x1="509" y1="202" x2="510" y2="217" stroke="var(--cyan)" stroke-width="1.4" marker-end="url(#arrPipe)"/>
+        <line x1="652" y1="202" x2="652" y2="217" stroke="var(--magenta)" stroke-width="1.4" marker-end="url(#arrPipe)"/>
+        <line x1="510" y1="251" x2="516" y2="278" stroke="var(--cyan)" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+        <line x1="652" y1="251" x2="734" y2="276" stroke="var(--magenta)" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+        <line x1="720" y1="251" x2="760" y2="276" stroke="var(--magenta)" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+
+        <!-- small legend -->
+        <text x="470" y="325" class="label-dim" font-size="9">cyan = safe-flow candidate</text>
+        <text x="635" y="325" class="label-dim" font-size="9">magenta = untrusted/FFI-related flow</text>
+
+        <text x="450" y="350" class="label-dim" text-anchor="middle" font-size="10">→ Andersen 指向分析 + 跨过程值流图</text>
+      </g>
+
+      <!-- ============ STAGE 3: P3 TaintPropagator ============ -->
+      <g class="compile-stage compile-stage-3">
+        <text x="40" y="125" class="label-title label-yellow">▶ P3 TaintPropagator · BFS 染色传播</text>
+        <text x="40" y="142" class="label-dim" font-size="10">以 unsafe / FFI 边界为污染种子，在 SVFG 上识别并标记相关污染子图</text>
+
+        <text x="40" y="170" class="label-cyan" font-family="JetBrains Mono" font-size="11">// 传播前：seed 从 call @openssl_decrypt(%buf, %b) 出发</text>
+        <rect x="58" y="188" width="90" height="24" rx="6" fill="rgba(92,225,255,0.08)" stroke="var(--cyan)"/>
+        <text x="103" y="203" class="label-text label-cyan" text-anchor="middle" font-size="9">alloc(64)</text>
+        <circle cx="103" cy="245" r="15" fill="rgba(92,225,255,0.12)" stroke="var(--cyan)"/>
+        <text x="103" y="249" class="label-text label-cyan" text-anchor="middle" font-size="10">%s</text>
+        <rect x="176" y="278" width="104" height="24" rx="6" fill="rgba(247,208,70,0.1)" stroke="var(--yellow)"/>
+        <text x="228" y="293" class="label-text label-yellow" text-anchor="middle" font-size="9">store %s, %slot</text>
+
+        <rect x="302" y="188" width="92" height="24" rx="6" fill="rgba(255,94,219,0.05)" stroke="var(--border)"/>
+        <text x="348" y="203" class="label-dim" text-anchor="middle" font-size="9">alloc(256)</text>
+        <circle cx="348" cy="245" r="15" fill="rgba(255,94,219,0.12)" stroke="var(--magenta)"/>
+        <text x="348" y="249" class="label-text label-magenta" text-anchor="middle" font-size="10">%b</text>
+        <circle cx="430" cy="245" r="15" fill="rgba(255,94,219,0.08)" stroke="var(--border)"/>
+        <text x="430" y="249" class="label-dim" text-anchor="middle" font-size="10">%buf</text>
+        <rect x="296" y="278" width="190" height="28" rx="6" fill="rgba(255,94,219,0.16)" stroke="var(--magenta)" stroke-width="1.5"/>
+        <text x="391" y="292" class="label-text label-magenta" text-anchor="middle" font-size="9">call @openssl_decrypt(%buf, %b)</text>
+        <text x="391" y="304" class="label-dim" text-anchor="middle" font-size="8">seed = unsafe block + FFI 实参/返回边界</text>
+
+        <line x1="103" y1="212" x2="103" y2="228" stroke="var(--cyan)" stroke-width="1.2" marker-end="url(#arrPipe)"/>
+        <line x1="118" y1="254" x2="196" y2="278" stroke="var(--cyan)" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+        <line x1="348" y1="212" x2="348" y2="228" stroke="var(--magenta)" stroke-width="1.2" marker-end="url(#arrPipe)"/>
+        <line x1="362" y1="255" x2="360" y2="278" stroke="var(--magenta)" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+        <line x1="430" y1="260" x2="421" y2="278" stroke="var(--border)" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+
+        <path d="M 500 235 L 540 235" stroke="var(--yellow)" stroke-width="2" fill="none" marker-end="url(#arrPipe)"/>
+        <text x="520" y="228" class="label-yellow" text-anchor="middle" font-size="10">BFS 传播</text>
+
+        <text x="560" y="170" class="label-green" font-family="JetBrains Mono" font-size="11">// 传播后：safe 支路保持中性；%b / %buf / callsite 被染成 tainted</text>
+
+        <rect x="566" y="188" width="90" height="24" rx="6" fill="rgba(92,225,255,0.05)" stroke="var(--border)"/>
+        <text x="611" y="203" class="label-dim" text-anchor="middle" font-size="9">alloc(64)</text>
+        <circle cx="611" cy="245" r="15" fill="var(--bg-card)" stroke="var(--border)"/>
+        <text x="611" y="249" class="label-text" text-anchor="middle" font-size="10">%s</text>
+        <rect x="560" y="278" width="104" height="24" rx="6" fill="rgba(247,208,70,0.06)" stroke="var(--border)"/>
+        <text x="612" y="293" class="label-dim" text-anchor="middle" font-size="9">store %s, %slot</text>
+        <text x="612" y="323" class="label-green" text-anchor="middle" font-size="9">untainted · 仅留在 safe 域</text>
+        <line x1="611" y1="212" x2="611" y2="228" stroke="var(--border)" stroke-width="1.2" marker-end="url(#arrPipe)"/>
+        <line x1="611" y1="260" x2="612" y2="278" stroke="var(--border)" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+
+        <rect x="702" y="188" width="92" height="24" rx="6" fill="rgba(255,94,219,0.18)" stroke="var(--magenta)" stroke-width="1.5"/>
+        <text x="748" y="203" class="label-text label-magenta" text-anchor="middle" font-size="9">alloc(256)</text>
+        <circle cx="748" cy="245" r="15" fill="rgba(255,94,219,0.28)" stroke="var(--magenta)" stroke-width="1.5"/>
+        <text x="748" y="249" class="label-text label-magenta" text-anchor="middle" font-size="10">%b</text>
+        <circle cx="820" cy="245" r="15" fill="rgba(255,94,219,0.22)" stroke="var(--magenta)" stroke-width="1.5"/>
+        <text x="820" y="249" class="label-text label-magenta" text-anchor="middle" font-size="10">%buf</text>
+        <rect x="696" y="278" width="168" height="28" rx="6" fill="rgba(255,94,219,0.18)" stroke="var(--magenta)" stroke-width="1.5"/>
+        <text x="780" y="292" class="label-text label-magenta" text-anchor="middle" font-size="9">call @openssl_decrypt(%buf, %b)</text>
+        <text x="780" y="323" class="label-magenta" text-anchor="middle" font-size="9">tainted: %b / %buf / FFI callsite</text>
+
+        <line x1="748" y1="212" x2="748" y2="228" stroke="var(--magenta)" stroke-width="1.4" marker-end="url(#arrPipe)"/>
+        <line x1="760" y1="256" x2="748" y2="278" stroke="var(--magenta)" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+        <line x1="814" y1="259" x2="802" y2="278" stroke="var(--magenta)" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#arrPipe)"/>
+
+        <text x="450" y="350" class="label-dim" text-anchor="middle" font-size="10">→ P3 产出统一结论：heap 上 %b 与栈上 %buf 都会穿越 FFI 边界，后续分别交给 P4 / P5 改写</text>
+      </g>
+
+      <!-- ============ STAGE 4: P4 AllocRewriter ============ -->
+      <g class="compile-stage compile-stage-4">
+        <text x="40" y="125" class="label-title label-yellow">▶ P4 AllocRewriter · 改写堆分配函数调用</text>
+        <text x="40" y="142" class="label-dim" font-size="10">据 P3 的 taint 结果，把 __rust_alloc 路由到 safe / unsafe mimalloc heap</text>
+
+        <text x="40" y="170" class="label-magenta" font-family="JetBrains Mono" font-size="11">// 改写前：两个 Vec 都还调用统一分配器</text>
+        <text x="40" y="190" class="label-text" font-family="JetBrains Mono" font-size="11">%s = call <tspan class="label-yellow">@__rust_alloc</tspan>(64)</text>
+        <text x="40" y="208" class="label-dim" font-family="JetBrains Mono" font-size="10">     ; safe branch · 仅被 slot 保存</text>
+        <text x="40" y="232" class="label-text" font-family="JetBrains Mono" font-size="11">%b = call <tspan class="label-yellow">@__rust_alloc</tspan>(256)</text>
+        <text x="40" y="250" class="label-dim" font-family="JetBrains Mono" font-size="10">     ; tainted branch · 传给 openssl_decrypt</text>
+        <text x="40" y="274" class="label-dim" font-family="JetBrains Mono" font-size="10">%buf = alloca [256 x i8]   ; 不归 P4 处理</text>
+
+        <rect x="270" y="182" width="150" height="86" rx="8" fill="rgba(247,208,70,0.06)" stroke="var(--yellow)"/>
+        <text x="345" y="201" class="label-yellow" text-anchor="middle" font-size="10">P4 决策表</text>
+        <text x="283" y="220" class="label-text" font-size="9">untainted heap → @__rust_alloc_safe</text>
+        <text x="283" y="238" class="label-text label-magenta" font-size="9">tainted heap → @__rust_alloc_unsafe</text>
+        <text x="283" y="256" class="label-dim" font-size="9">stack object 留给 P5 处理</text>
+
+        <path d="M 430 215 L 470 215" stroke="var(--yellow)" stroke-width="2" fill="none" marker-end="url(#arrPipe)"/>
+        <text x="450" y="208" class="label-yellow" text-anchor="middle" font-size="10">P4 改写</text>
+
+        <text x="500" y="170" class="label-green" font-family="JetBrains Mono" font-size="11">// 改写后：示例程序被拆到两个 mimalloc heap</text>
+        <text x="500" y="190" class="label-text" font-family="JetBrains Mono" font-size="11">%s = call <tspan class="label-green">@__rust_alloc_safe</tspan>(64)</text>
+        <text x="500" y="208" class="label-dim" font-family="JetBrains Mono" font-size="10">     → mi_heap_safe · pkey=1 · safe Rust 可读写</text>
+        <text x="500" y="232" class="label-text" font-family="JetBrains Mono" font-size="11">%b = call <tspan class="label-magenta">@__rust_alloc_unsafe</tspan>(256)</text>
+        <text x="500" y="250" class="label-dim" font-family="JetBrains Mono" font-size="10">     → mi_heap_unsafe · pkey=15 · 供 untrusted 代码访问</text>
+        <text x="500" y="274" class="label-text" font-family="JetBrains Mono" font-size="11">%buf = alloca [256 x i8] <tspan class="label-yellow">; next → P5</tspan></text>
+
+        <rect x="660" y="184" width="178" height="58" rx="8" fill="rgba(110,240,160,0.08)" stroke="var(--green)"/>
+        <text x="749" y="201" class="label-green" text-anchor="middle" font-size="10">SAFE HEAP</text>
+        <text x="749" y="219" class="label-text" text-anchor="middle" font-size="9">%s 所在 heap object</text>
+        <text x="749" y="233" class="label-dim" text-anchor="middle" font-size="8">被 gate 关闭后不可被 FFI 访问</text>
+        <rect x="660" y="252" width="178" height="58" rx="8" fill="rgba(255,94,219,0.12)" stroke="var(--magenta)"/>
+        <text x="749" y="269" class="label-magenta" text-anchor="middle" font-size="10">UNSAFE HEAP</text>
+        <text x="749" y="287" class="label-text label-magenta" text-anchor="middle" font-size="9">%b 所在对象</text>
+        <text x="749" y="301" class="label-dim" text-anchor="middle" font-size="8">与 untrusted 库共享</text>
+
+        <text x="450" y="350" class="label-dim" text-anchor="middle" font-size="10">→ 统一示例里只有 %s 和 %b 两个 heap 分配点：前者进 safe heap，后者进 unsafe heap</text>
+      </g>
+
+      <!-- ============ STAGE 5: P5 StackSplitter ============ -->
+      <g class="compile-stage compile-stage-5">
+        <text x="40" y="125" class="label-title label-yellow">▶ P5 StackSplitter · 改写 alloca 实现栈分裂</text>
+        <text x="40" y="142" class="label-dim" font-size="10">P3 把 %buf 标成 tainted stack object，P5 将其搬到 TLS 维护的 unsafe stack</text>
+
+        <text x="40" y="170" class="label-magenta" font-family="JetBrains Mono" font-size="11">// 改写前：%buf 仍在默认 safe stack 上</text>
+        <text x="40" y="190" class="label-text" font-family="JetBrains Mono" font-size="11">%slot = alloca i8*</text>
+        <text x="40" y="208" class="label-dim" font-family="JetBrains Mono" font-size="10">     ; 保存 safe Vec %s 的局部槽位</text>
+        <text x="40" y="232" class="label-text label-yellow" font-family="JetBrains Mono" font-size="11">%buf = alloca [256 x i8]</text>
+        <text x="40" y="250" class="label-dim" font-family="JetBrains Mono" font-size="10">     ; 作为 openssl_decrypt 的 dst 参数</text>
+        <text x="40" y="274" class="label-text" font-family="JetBrains Mono" font-size="11">call @openssl_decrypt(%buf, %b)</text>
+
+        <path d="M 390 215 L 440 215" stroke="var(--yellow)" stroke-width="2" fill="none" marker-end="url(#arrPipe)"/>
+        <text x="415" y="208" class="label-yellow" text-anchor="middle" font-size="10">P5 改写</text>
+
+        <text x="470" y="170" class="label-green" font-family="JetBrains Mono" font-size="11">// 改写后：safe / unsafe 双栈并存</text>
+        <text x="470" y="190" class="label-text" font-family="JetBrains Mono" font-size="11">%slot = alloca i8* <tspan class="label-green">; 保留在 safe_sp</tspan></text>
+        <text x="470" y="210" class="label-text label-magenta" font-family="JetBrains Mono" font-size="11">%usp0 = load i8*, @unsafe_sp</text>
+        <text x="470" y="228" class="label-text label-magenta" font-family="JetBrains Mono" font-size="11">%buf = getelementptr i8, i8* %usp0, -256</text>
+        <text x="470" y="246" class="label-text label-magenta" font-family="JetBrains Mono" font-size="11">store i8* %buf, @unsafe_sp</text>
+        <text x="470" y="264" class="label-text" font-family="JetBrains Mono" font-size="11">call @openssl_decrypt(%buf, %b)</text>
+
+        <rect x="670" y="178" width="92" height="118" rx="8" fill="rgba(110,240,160,0.08)" stroke="var(--green)"/>
+        <text x="716" y="196" class="label-green" text-anchor="middle" font-size="10">safe_sp</text>
+        <rect x="686" y="208" width="60" height="18" rx="4" fill="rgba(92,225,255,0.08)" stroke="var(--border)"/>
+        <text x="716" y="220" class="label-text" text-anchor="middle" font-size="9">ret addr</text>
+        <rect x="686" y="232" width="60" height="18" rx="4" fill="rgba(92,225,255,0.08)" stroke="var(--border)"/>
+        <text x="716" y="244" class="label-text" text-anchor="middle" font-size="9">%slot</text>
+        <text x="716" y="269" class="label-dim" text-anchor="middle" font-size="8">safe Rust 局部变量</text>
+
+        <rect x="778" y="178" width="92" height="118" rx="8" fill="rgba(255,94,219,0.12)" stroke="var(--magenta)"/>
+        <text x="824" y="196" class="label-magenta" text-anchor="middle" font-size="10">unsafe_sp</text>
+        <rect x="794" y="208" width="60" height="18" rx="4" fill="rgba(255,94,219,0.18)" stroke="var(--magenta)"/>
+        <text x="824" y="220" class="label-text label-magenta" text-anchor="middle" font-size="9">%buf[256]</text>
+        <rect x="794" y="232" width="60" height="18" rx="4" fill="rgba(255,94,219,0.08)" stroke="var(--border)"/>
+        <text x="824" y="244" class="label-dim" text-anchor="middle" font-size="9">callee scratch</text>
+        <text x="824" y="269" class="label-dim" text-anchor="middle" font-size="8">TLS @unsafe_sp 维护栈顶</text>
+
+        <text x="450" y="350" class="label-dim" text-anchor="middle" font-size="10">→ 统一示例中：%slot 继续留在 safe stack，唯有 FFI 输出缓冲 %buf 被降到 unsafe stack</text>
+      </g>
+
+      <!-- ============ STAGE 6: P6 GateInserter ============ -->
+      <g class="compile-stage compile-stage-6">
+        <text x="40" y="125" class="label-title label-yellow">▶ P6 GateInserter · 跨域调用包装为 gate</text>
+        <text x="40" y="142" class="label-dim" font-size="10">把 demo() 中唯一的 FFI 调用包装成入口/返回双向 gate：切 PKRU + 切栈</text>
+
+        <text x="40" y="170" class="label-magenta" font-family="JetBrains Mono" font-size="11">// 改写前：safe 域里直接调用 untrusted 函数</text>
+        <text x="40" y="190" class="label-text" font-family="JetBrains Mono" font-size="11">call <tspan class="label-yellow">@openssl_decrypt</tspan>(%buf, %b)</text>
+        <text x="40" y="214" class="label-dim" font-family="JetBrains Mono" font-size="10">PKRU = safe only</text>
+        <text x="40" y="232" class="label-dim" font-family="JetBrains Mono" font-size="10">RSP  = safe_sp</text>
+        <text x="40" y="250" class="label-dim" font-family="JetBrains Mono" font-size="10">⚠ untrusted callee 可能接触到错误的堆/栈权限</text>
+
+        <path d="M 360 215 L 430 215" stroke="var(--yellow)" stroke-width="2" fill="none" marker-end="url(#arrPipe)"/>
+        <text x="395" y="208" class="label-yellow" text-anchor="middle" font-size="10">P6 插桩</text>
+
+        <text x="460" y="170" class="label-green" font-family="JetBrains Mono" font-size="11">// 改写后：callsite 被替换成 gate 模板</text>
+        <text x="460" y="190" class="label-text" font-family="JetBrains Mono" font-size="11">call <tspan class="label-cyan">@__gate_call_openssl_decrypt</tspan>(%buf, %b)</text>
+        <text x="460" y="210" class="label-dim" font-family="JetBrains Mono" font-size="10">gate 展开为：</text>
+        <text x="470" y="228" class="label-text" font-family="JetBrains Mono" font-size="10">① save %rsp → @safe_sp_shadow</text>
+        <text x="470" y="244" class="label-text" font-family="JetBrains Mono" font-size="10">② load @unsafe_sp → %rsp</text>
+        <text x="470" y="260" class="label-text label-yellow" font-family="JetBrains Mono" font-size="10">③ <tspan font-weight="700">wrpkru</tspan>(enable unsafe heap/stack)</text>
+        <text x="470" y="276" class="label-text" font-family="JetBrains Mono" font-size="10">④ call openssl_decrypt(%buf, %b)</text>
+        <text x="470" y="292" class="label-text label-yellow" font-family="JetBrains Mono" font-size="10">⑤ <tspan font-weight="700">wrpkru</tspan>(restore safe-only) + 恢复 %rsp</text>
+
+        <rect x="720" y="184" width="132" height="42" rx="8" fill="rgba(110,240,160,0.08)" stroke="var(--green)"/>
+        <text x="786" y="201" class="label-green" text-anchor="middle" font-size="10">进入前</text>
+        <text x="786" y="216" class="label-dim" text-anchor="middle" font-size="8">PKRU: safe</text>
+        <rect x="720" y="236" width="132" height="42" rx="8" fill="rgba(255,94,219,0.12)" stroke="var(--magenta)"/>
+        <text x="786" y="253" class="label-magenta" text-anchor="middle" font-size="10">gate 内部</text>
+        <text x="786" y="268" class="label-dim" text-anchor="middle" font-size="8">PKRU: unsafe 可达 / rsp=unsafe_sp</text>
+        <rect x="720" y="288" width="132" height="42" rx="8" fill="rgba(92,225,255,0.08)" stroke="var(--cyan)"/>
+        <text x="786" y="305" class="label-cyan" text-anchor="middle" font-size="10">返回后</text>
+        <text x="786" y="320" class="label-dim" text-anchor="middle" font-size="8">PKRU: safe 恢复 / rsp=safe_sp</text>
+
+        <text x="450" y="350" class="label-dim" text-anchor="middle" font-size="10">→ 统一示例中唯一的跨域边界就是 openssl_decrypt(%buf, %b)，因此只生成一个 gate 入口与一个返回门</text>
+      </g>
+
+      <!-- ============ STAGE 7: P7 WRPKRUScanner ============ -->
+      <g class="compile-stage compile-stage-7">
+        <text x="40" y="125" class="label-title label-yellow">▶ P7 WRPKRUScanner · 链接后字节扫描</text>
+        <text x="40" y="142" class="label-dim" font-size="10">扫描 final binary 中全部 0F 01 EF（wrpkru）模式，验证它们只存在于 P6 插入的 gate 模板中</text>
+
+        <text x="40" y="170" class="label-cyan" font-family="JetBrains Mono" font-size="11">; final.elf 中 demo() 对应的 gate 反汇编</text>
+        <rect x="40" y="182" width="392" height="136" rx="8" fill="rgba(6,8,24,0.6)" stroke="var(--border)"/>
+        <text x="56" y="202" class="label-text" font-family="JetBrains Mono" font-size="10">__gate_call_openssl_decrypt:</text>
+        <text x="56" y="220" class="label-text" font-family="JetBrains Mono" font-size="10">  mov %rsp, @safe_sp_shadow</text>
+        <text x="56" y="238" class="label-text" font-family="JetBrains Mono" font-size="10">  mov @unsafe_sp, %rsp</text>
+        <text x="56" y="256" class="label-yellow" font-family="JetBrains Mono" font-size="10">  0F 01 EF    ; wrpkru enter-untrusted</text>
+        <text x="56" y="274" class="label-text" font-family="JetBrains Mono" font-size="10">  call @openssl_decrypt</text>
+        <text x="56" y="292" class="label-yellow" font-family="JetBrains Mono" font-size="10">  0F 01 EF    ; wrpkru restore-safe</text>
+        <text x="56" y="310" class="label-text" font-family="JetBrains Mono" font-size="10">  mov @safe_sp_shadow, %rsp</text>
+
+        <path d="M 440 240 L 500 240" stroke="var(--yellow)" stroke-width="2" fill="none" marker-end="url(#arrPipe)"/>
+        <text x="470" y="232" class="label-yellow" text-anchor="middle" font-size="10">滑窗扫描</text>
+
+        <rect x="520" y="182" width="330" height="144" rx="8" fill="rgba(255,94,219,0.06)" stroke="var(--magenta)"/>
+        <text x="685" y="200" class="label-title label-magenta" text-anchor="middle">Scanner report</text>
+        <text x="538" y="222" class="label-text" font-size="10">match #1 → __gate_call_openssl_decrypt +0x18</text>
+        <text x="538" y="240" class="label-green" font-size="10">✓ 紧跟 gate 模板前半段（切换到 unsafe）</text>
+        <text x="538" y="260" class="label-text" font-size="10">match #2 → __gate_call_openssl_decrypt +0x31</text>
+        <text x="538" y="278" class="label-green" font-size="10">✓ 紧跟返回模板（恢复 safe + restore rsp）</text>
+        <text x="538" y="298" class="label-dim" font-size="10">stray matches = 0 · forged wrpkru = 0</text>
+        <text x="538" y="314" class="label-dim" font-size="10">restore %rsp sequence verified</text>
+
+        <rect x="560" y="316" width="250" height="22" rx="11" fill="rgba(110,240,160,0.12)" stroke="var(--green)"/>
+        <text x="685" y="331" class="label-green" text-anchor="middle" font-size="10">demo() 仅剩 gate 中 2 个合法 wrpkru 指令</text>
+
+        <text x="450" y="350" class="label-green" text-anchor="middle" font-size="11" font-weight="700">✓ 通过 P7 → 该统一示例最终输出仅含受控 gate 的加固二进制</text>
+      </g>
+    </svg>
+    <div class="grid-3" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">演示节奏</div><p style="font-size:var(--tiny-size);">每个 Pass 显示 ~2s · 全周期 14s · 当前 Pass 黄色高亮</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">关键变化</div><p style="font-size:var(--tiny-size);">P1 加 metadata · P3 染色 · P4 改写 heap alloc · P5 分裂 stack · P6 注入 gate · P7 验证</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">最终产物</div><p style="font-size:var(--tiny-size);">已含双堆路由 + 双栈分裂 + gate 内联汇编 + WRPKRU 扫描通过</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S4 · MPK MECHANISM ============== -->
+<section class="slide" id="s4">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 1 / 12 · MPK 工作原理</div>
+    <div class="page-num"><span>04</span> / 22</div>
+    <div class="tag-line">Mechanism · Intel MPK 硬件机制</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #1 · 硬件页着色 + 用户态权限切换</div>
+    <h2>MPK 数据通路：<span class="glow-text">访存 → MMU → pkey → PKRU → 决策</span></h2>
+    <svg class="diagram" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet" style="max-height:50vh;">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--cyan)"/>
+        </marker>
+      </defs>
+
+      <!-- CPU -->
+      <rect x="20" y="40" width="130" height="60" rx="6" fill="var(--bg-card)" stroke="var(--cyan)" class="anim-pulse"/>
+      <text x="85" y="60" class="label-title" text-anchor="middle">CPU</text>
+      <text x="85" y="80" class="label-text" text-anchor="middle">load/store</text>
+      <text x="85" y="93" class="label-dim" text-anchor="middle">[virt_addr]</text>
+
+      <!-- traveling packet from CPU to MMU -->
+      <circle r="6" class="packet" style="offset-path: path('M 150 70 L 200 70'); animation: travel 2.5s linear infinite;"/>
+
+      <!-- MMU -->
+      <rect x="200" y="40" width="160" height="60" rx="6" fill="var(--bg-card)" stroke="var(--yellow)"/>
+      <text x="280" y="58" class="label-title label-yellow" text-anchor="middle">MMU</text>
+      <text x="280" y="76" class="label-text" text-anchor="middle">查 4 级页表</text>
+      <text x="280" y="92" class="label-dim" text-anchor="middle">提取 PTE.bits[62:59]</text>
+
+      <!-- Page Table Entry box -->
+      <rect x="400" y="30" width="220" height="80" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+      <text x="510" y="48" class="label-title" text-anchor="middle">PTE (页表项)</text>
+      <rect x="410" y="58" width="30" height="22" fill="rgba(110,240,160,0.2)" stroke="var(--green)"/>
+      <text x="425" y="73" class="label-text label-green" text-anchor="middle" font-size="9">addr</text>
+      <rect x="445" y="58" width="30" height="22" fill="rgba(247,208,70,0.2)" stroke="var(--yellow)" class="anim-blink"/>
+      <text x="460" y="73" class="label-text label-yellow" text-anchor="middle" font-size="9">pkey</text>
+      <text x="460" y="93" class="label-dim" text-anchor="middle" font-size="9">4-bit</text>
+      <rect x="480" y="58" width="30" height="22" fill="rgba(92,225,255,0.1)" stroke="var(--border)"/>
+      <text x="495" y="73" class="label-text" text-anchor="middle" font-size="9">flags</text>
+      <text x="510" y="100" class="label-dim" text-anchor="middle" font-size="9">→ pkey ∈ {0..15}</text>
+
+      <line x1="360" y1="70" x2="398" y2="70" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#arr2)" class="flow-line active"/>
+
+      <!-- PKRU Register -->
+      <rect x="200" y="160" width="500" height="80" rx="6" fill="var(--bg-card)" stroke="var(--magenta)"/>
+      <text x="450" y="178" class="label-title label-magenta" text-anchor="middle">PKRU 寄存器（每 pkey 占 2 bit：AD, WD）</text>
+      <!-- 16 pkey slots × 2 bits each = 32 bits -->
+      <g transform="translate(220, 195)">
+        <text x="-10" y="14" class="label-dim" font-size="9">15</text>
+        <rect x="0" y="0" width="20" height="20" class="diagram-bit locked"/>
+        <text x="10" y="14" class="label-text label-magenta" text-anchor="middle" font-size="10">D</text>
+        <text x="25" y="14" class="label-dim" font-size="9">14</text>
+        <rect x="35" y="0" width="20" height="20" class="diagram-bit open"/>
+        <text x="45" y="14" class="label-text label-green" text-anchor="middle" font-size="10">RW</text>
+        <text x="60" y="14" class="label-dim" font-size="9">...</text>
+        <rect x="80" y="0" width="20" height="20" class="diagram-bit open"/>
+        <text x="90" y="14" class="label-text label-green" text-anchor="middle" font-size="10">RW</text>
+        <rect x="115" y="0" width="20" height="20" class="diagram-bit open" style="background:rgba(110,240,160,0.5)"/>
+        <text x="125" y="14" class="label-text label-green" text-anchor="middle" font-size="10">RW</text>
+        <text x="138" y="14" class="label-dim" font-size="9">1</text>
+        <rect x="155" y="0" width="20" height="20" class="diagram-bit"/>
+        <text x="165" y="14" class="label-text" text-anchor="middle" font-size="10">RW</text>
+        <text x="178" y="14" class="label-dim" font-size="9">0</text>
+      </g>
+      <text x="450" y="232" class="label-dim" text-anchor="middle">PKRU = 0x40000004 → SAFE 域可读写, UNSAFE 域禁止访问</text>
+
+      <line x1="280" y1="100" x2="280" y2="158" stroke="var(--cyan)" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arr2)"/>
+      <text x="295" y="135" class="label-dim" font-size="9">查 PKRU[2*pkey]</text>
+
+      <!-- Decision -->
+      <polygon points="730,55 800,90 730,125 660,90" fill="var(--bg-card)" stroke="var(--cyan)"/>
+      <text x="730" y="85" class="label-text" text-anchor="middle">允许?</text>
+      <text x="730" y="100" class="label-dim" text-anchor="middle" font-size="9">AD=0 &amp; WD=0?</text>
+
+      <line x1="620" y1="70" x2="658" y2="78" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#arr2)" class="flow-line active"/>
+
+      <!-- Outcomes -->
+      <rect x="820" y="40" width="70" height="36" rx="6" fill="rgba(110,240,160,0.1)" stroke="var(--green)"/>
+      <text x="855" y="62" class="label-text label-green" text-anchor="middle">✓ 通过</text>
+      <line x1="800" y1="80" x2="818" y2="65" stroke="var(--green)" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <rect x="820" y="105" width="70" height="36" rx="6" fill="rgba(255,94,219,0.1)" stroke="var(--magenta)"/>
+      <text x="855" y="127" class="label-text label-magenta" text-anchor="middle">✗ #PF</text>
+      <line x1="800" y1="100" x2="818" y2="115" stroke="var(--magenta)" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Bottom note -->
+      <text x="450" y="290" class="label-dim" text-anchor="middle">无系统调用 · 无 TLB 刷新 · 切换 ~ 数十纳秒</text>
+    </svg>
+    <div class="grid-3" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">页着色</div><p style="font-size:var(--tiny-size);">每 4KB 页 PTE 含 4-bit pkey · 最多 16 个域</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">PKRU</div><p style="font-size:var(--tiny-size);">线程局部 32-bit 寄存器 · 控制 16 域权限</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">硬件强制</div><p style="font-size:var(--tiny-size);">MMU 在每次访存时检查 · 违规 #PF</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S5 · WRPKRU INSTRUCTION ============== -->
+<section class="slide" id="s5">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 2 / 12 · WRPKRU 切换指令</div>
+    <div class="page-num"><span>05</span> / 22</div>
+    <div class="tag-line">Mechanism · WRPKRU + 安全护栏</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #2 · 1 条用户态指令切换权限</div>
+    <h2>WRPKRU 切换 · <span class="glow-text">PKRU 状态翻转动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 280" preserveAspectRatio="xMidYMid meet" style="max-height:50vh;">
+      <!-- Title -->
+      <text x="450" y="20" class="label-title" text-anchor="middle">SAFE 模式 ⇄ UNSAFE 模式 · 6 秒一次循环</text>
+
+      <!-- Left: SAFE state -->
+      <g>
+        <rect x="40" y="50" width="320" height="150" rx="8" class="domain-box anim-toggle-domain" stroke-width="2"/>
+        <text x="200" y="75" class="label-title label-cyan" text-anchor="middle">SAFE 模式 · PKRU = 0x40000004</text>
+        <!-- pkey 1 enabled -->
+        <rect x="60" y="90" width="60" height="40" rx="4" fill="rgba(110,240,160,0.15)" stroke="var(--green)"/>
+        <text x="90" y="108" class="label-text label-green" text-anchor="middle">pkey 1</text>
+        <text x="90" y="123" class="label-dim" text-anchor="middle">RW ✓</text>
+        <text x="90" y="148" class="label-dim" text-anchor="middle" font-size="9">SAFE 域</text>
+
+        <!-- pkey 15 disabled -->
+        <rect x="240" y="90" width="60" height="40" rx="4" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)" stroke-dasharray="3 3"/>
+        <text x="270" y="108" class="label-text label-magenta" text-anchor="middle">pkey 15</text>
+        <text x="270" y="123" class="label-text label-magenta" text-anchor="middle">✗</text>
+        <text x="270" y="148" class="label-dim" text-anchor="middle" font-size="9">UNSAFE 域</text>
+
+        <text x="200" y="178" class="label-text" text-anchor="middle">线程在 Safe 域内</text>
+      </g>
+
+      <!-- WRPKRU instruction in middle -->
+      <g>
+        <rect x="370" y="100" width="160" height="60" rx="30" fill="rgba(247,208,70,0.1)" stroke="var(--yellow)" stroke-width="2" class="anim-pulse"/>
+        <text x="450" y="125" class="label-title label-yellow" text-anchor="middle">WRPKRU</text>
+        <text x="450" y="142" class="label-dim" text-anchor="middle" font-size="10">0F 01 EF</text>
+        <text x="450" y="155" class="label-dim" text-anchor="middle" font-size="9">仅 1 条指令</text>
+      </g>
+
+      <!-- Right: UNSAFE state -->
+      <g>
+        <rect x="540" y="50" width="320" height="150" rx="8" class="domain-box anim-toggle-unsafe" stroke-width="2"/>
+        <text x="700" y="75" class="label-title label-magenta" text-anchor="middle">UNSAFE 模式 · PKRU = 0x55555510</text>
+        <!-- pkey 1 disabled -->
+        <rect x="560" y="90" width="60" height="40" rx="4" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)" stroke-dasharray="3 3"/>
+        <text x="590" y="108" class="label-text label-magenta" text-anchor="middle">pkey 1</text>
+        <text x="590" y="123" class="label-text label-magenta" text-anchor="middle">✗</text>
+        <text x="590" y="148" class="label-dim" text-anchor="middle" font-size="9">SAFE 域</text>
+
+        <!-- pkey 15 enabled -->
+        <rect x="740" y="90" width="60" height="40" rx="4" fill="rgba(110,240,160,0.15)" stroke="var(--green)"/>
+        <text x="770" y="108" class="label-text label-green" text-anchor="middle">pkey 15</text>
+        <text x="770" y="123" class="label-dim" text-anchor="middle">RW ✓</text>
+        <text x="770" y="148" class="label-dim" text-anchor="middle" font-size="9">UNSAFE 域</text>
+
+        <text x="700" y="178" class="label-text" text-anchor="middle">线程在 Untrusted 域内</text>
+      </g>
+
+      <!-- arrows -->
+      <path d="M 360 130 L 370 130" stroke="var(--cyan)" stroke-width="2" fill="none" marker-end="url(#arr2)"/>
+      <path d="M 530 130 L 540 130" stroke="var(--magenta)" stroke-width="2" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- Bottom: 4 protection rails -->
+      <text x="450" y="225" class="label-title label-yellow" text-anchor="middle">⚠ 4 道安全护栏（继承 ERIM）</text>
+      <g transform="translate(60, 240)">
+        <rect x="0" y="0" width="180" height="30" rx="4" fill="rgba(247,208,70,0.05)" stroke="var(--yellow)"/>
+        <text x="90" y="18" class="label-text" text-anchor="middle" font-size="10">① P7 扫描 0F 01 EF 字节</text>
+      </g>
+      <g transform="translate(260, 240)">
+        <rect x="0" y="0" width="180" height="30" rx="4" fill="rgba(247,208,70,0.05)" stroke="var(--yellow)"/>
+        <text x="90" y="18" class="label-text" text-anchor="middle" font-size="10">② cmp+jne 验证（防 ROP）</text>
+      </g>
+      <g transform="translate(460, 240)">
+        <rect x="0" y="0" width="180" height="30" rx="4" fill="rgba(247,208,70,0.05)" stroke="var(--yellow)"/>
+        <text x="90" y="18" class="label-text" text-anchor="middle" font-size="10">③ 禁止 XRSTOR</text>
+      </g>
+      <g transform="translate(660, 240)">
+        <rect x="0" y="0" width="180" height="30" rx="4" fill="rgba(247,208,70,0.05)" stroke="var(--yellow)"/>
+        <text x="90" y="18" class="label-text" text-anchor="middle" font-size="10">④ W^X 防注入</text>
+      </g>
+    </svg>
+    <div class="card" style="margin-top:0.3em;padding:0.4em;background:rgba(255,94,219,0.04);border-color:rgba(255,94,219,0.3);">
+      <div class="num" style="color:var(--magenta);">⚠ 致命弱点</div>
+      <p style="font-size:var(--small-size);">WRPKRU 是用户态非特权指令 · 若 untrusted 能任意执行 → 自己解锁所有域 · TRust 通过 P7 静态扫描 + 验证 + W^X 三层防御</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S6 · MEMORY LAYOUT ============== -->
+<section class="slide" id="s6">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 3 / 12 · 进程内存布局</div>
+    <div class="page-num"><span>06</span> / 22</div>
+    <div class="tag-line">Mechanism · 进程地址空间分割</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #3 · 单进程地址空间的 pkey 着色</div>
+    <h2>虚拟地址空间布局 · <span class="glow-text">页面着色动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 360" preserveAspectRatio="xMidYMid meet" style="max-height:60vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">同一地址空间 · 4KB 页粒度 · 不同 pkey</text>
+
+      <!-- Address spectrum (left) -->
+      <text x="60" y="50" class="label-dim" font-size="9">0x7FFFFFFFFFFF</text>
+      <text x="60" y="340" class="label-dim" font-size="9">0x400000</text>
+      <text x="20" y="195" class="label-dim" font-size="9" transform="rotate(-90 30 195)">虚拟地址 (高 → 低)</text>
+
+      <!-- Memory regions stacked -->
+      <g transform="translate(150, 40)">
+        <!-- kernel -->
+        <rect x="0" y="0" width="500" height="30" class="page-row" fill="rgba(140,140,140,0.15)" stroke="var(--border)"/>
+        <text x="250" y="20" class="label-text" text-anchor="middle">ld.so / vdso / kernel</text>
+
+        <!-- safe stack -->
+        <rect x="0" y="35" width="500" height="35" class="page-row page-flash-safe" stroke="var(--cyan)"/>
+        <text x="250" y="58" class="label-text label-cyan" text-anchor="middle">Safe Stack（主 %rsp）</text>
+
+        <!-- unsafe stack -->
+        <rect x="0" y="75" width="500" height="35" class="page-row page-flash-unsafe" stroke="var(--magenta)"/>
+        <text x="250" y="98" class="label-text label-magenta" text-anchor="middle">Unsafe Stack（TLS unsafe SP）</text>
+
+        <!-- mmap -->
+        <rect x="0" y="115" width="500" height="25" class="page-row" fill="rgba(140,140,140,0.1)" stroke="var(--border)"/>
+        <text x="250" y="132" class="label-text" text-anchor="middle">mmap region (libmpk.so)</text>
+
+        <!-- unsafe heap -->
+        <rect x="0" y="145" width="500" height="50" class="page-row page-flash-unsafe" stroke="var(--magenta)"/>
+        <text x="250" y="172" class="label-text label-magenta" text-anchor="middle">mi_heap_unsafe segments</text>
+        <text x="250" y="187" class="label-dim" text-anchor="middle" font-size="9">4MB segment × N</text>
+
+        <!-- safe heap -->
+        <rect x="0" y="200" width="500" height="50" class="page-row page-flash-safe" stroke="var(--cyan)"/>
+        <text x="250" y="227" class="label-text label-cyan" text-anchor="middle">mi_heap_safe segments</text>
+        <text x="250" y="242" class="label-dim" text-anchor="middle" font-size="9">4MB segment × N</text>
+
+        <!-- bss/data -->
+        <rect x="0" y="255" width="500" height="30" class="page-row page-flash-safe" stroke="var(--cyan)"/>
+        <text x="250" y="275" class="label-text label-cyan" text-anchor="middle">.bss / .data (含 std 静态)</text>
+
+        <!-- text -->
+        <rect x="0" y="290" width="500" height="30" class="page-row" fill="rgba(110,240,160,0.05)" stroke="var(--green)"/>
+        <text x="250" y="310" class="label-text label-green" text-anchor="middle">.text（用户 + std + libmpk）</text>
+      </g>
+
+      <!-- pkey labels on right -->
+      <g transform="translate(680, 40)">
+        <rect x="0" y="0" width="100" height="30" rx="4" fill="rgba(140,140,140,0.1)" stroke="var(--border)"/>
+        <text x="50" y="20" class="label-dim" text-anchor="middle">pkey = 0</text>
+        <rect x="0" y="35" width="100" height="35" rx="4" fill="rgba(92,225,255,0.1)" stroke="var(--cyan)"/>
+        <text x="50" y="58" class="label-text label-cyan" text-anchor="middle">pkey = 1 (SAFE)</text>
+        <rect x="0" y="75" width="100" height="35" rx="4" fill="rgba(255,94,219,0.1)" stroke="var(--magenta)"/>
+        <text x="50" y="98" class="label-text label-magenta" text-anchor="middle">pkey = 15</text>
+        <rect x="0" y="115" width="100" height="25" rx="4" fill="rgba(140,140,140,0.1)" stroke="var(--border)"/>
+        <text x="50" y="132" class="label-dim" text-anchor="middle">pkey = 0</text>
+        <rect x="0" y="145" width="100" height="50" rx="4" fill="rgba(255,94,219,0.1)" stroke="var(--magenta)"/>
+        <text x="50" y="175" class="label-text label-magenta" text-anchor="middle">pkey = 15</text>
+        <rect x="0" y="200" width="100" height="50" rx="4" fill="rgba(92,225,255,0.1)" stroke="var(--cyan)"/>
+        <text x="50" y="230" class="label-text label-cyan" text-anchor="middle">pkey = 1</text>
+        <rect x="0" y="255" width="100" height="30" rx="4" fill="rgba(92,225,255,0.1)" stroke="var(--cyan)"/>
+        <text x="50" y="275" class="label-text label-cyan" text-anchor="middle">pkey = 1</text>
+        <rect x="0" y="290" width="100" height="30" rx="4" fill="rgba(110,240,160,0.05)" stroke="var(--green)"/>
+        <text x="50" y="310" class="label-text label-green" text-anchor="middle">pkey = 0</text>
+      </g>
+    </svg>
+    <div class="grid-3" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">观察 ①</div><p style="font-size:var(--tiny-size);">所有页面共享同一 4 级页表 · pkey 是 PTE 的 4 个 bit</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">观察 ②</div><p style="font-size:var(--tiny-size);">.text 段 pkey=0 · 所有线程都能取指 · WRPKRU 不影响代码读取</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">观察 ③</div><p style="font-size:var(--tiny-size);">堆栈划分非地址连续 · 由 mimalloc segment 边界决定</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S7 · DUAL HEAP MECHANISM ============== -->
+<section class="slide" id="s7">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 4 / 12 · 双堆改造</div>
+    <div class="page-num"><span>07</span> / 22</div>
+    <div class="tag-line">Mechanism · mpk-mimalloc 双堆实现</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #4 · alloc 路由 + segment 染色</div>
+    <h2>双堆机制 · <span class="glow-text">分配请求路由动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet" style="max-height:55vh;">
+      <defs>
+        <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--cyan)"/>
+        </marker>
+      </defs>
+
+      <!-- User code -->
+      <rect x="20" y="40" width="200" height="80" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+      <text x="120" y="60" class="label-title" text-anchor="middle">用户代码</text>
+      <text x="120" y="80" class="label-text" text-anchor="middle">let v = Vec::new()</text>
+      <text x="120" y="100" class="label-text" text-anchor="middle">let b = Box::new()</text>
+
+      <!-- Compiler decision diamond -->
+      <polygon points="320,80 410,40 500,80 410,120" fill="var(--bg-card)" stroke="var(--yellow)" class="anim-pulse"/>
+      <text x="410" y="75" class="label-text label-yellow" text-anchor="middle">SVF 决策</text>
+      <text x="410" y="92" class="label-dim" text-anchor="middle" font-size="9">P4 改写</text>
+
+      <line x1="220" y1="80" x2="318" y2="80" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#arr3)" class="flow-line active"/>
+
+      <!-- Route packets -->
+      <circle r="6" class="packet" style="offset-path: path('M 220 80 L 318 80'); animation: travel 3s linear infinite;"/>
+      <circle r="6" class="packet magenta" style="offset-path: path('M 220 80 L 318 80'); animation: travel 3s linear infinite; animation-delay: 1.5s;"/>
+
+      <!-- Two routes -->
+      <line x1="455" y1="55" x2="600" y2="40" stroke="var(--green)" stroke-width="1.5" marker-end="url(#arr3)" class="flow-line active"/>
+      <text x="525" y="40" class="label-text label-green" font-size="10">safe</text>
+      <line x1="455" y1="105" x2="600" y2="180" stroke="var(--magenta)" stroke-width="1.5" marker-end="url(#arr3)" class="flow-line active"/>
+      <text x="525" y="155" class="label-text label-magenta" font-size="10">tainted</text>
+
+      <!-- Safe heap -->
+      <g transform="translate(610, 30)">
+        <rect x="0" y="0" width="270" height="100" rx="6" fill="rgba(92,225,255,0.05)" stroke="var(--cyan)" stroke-width="2"/>
+        <text x="135" y="20" class="label-title label-cyan" text-anchor="middle">mi_heap_safe (pkey=1)</text>
+        <!-- Segments -->
+        <rect x="10" y="30" width="50" height="55" class="page-row page-flash-safe" stroke="var(--cyan)"/>
+        <text x="35" y="55" class="label-dim" text-anchor="middle" font-size="9">seg 1</text>
+        <text x="35" y="70" class="label-dim" text-anchor="middle" font-size="9">4MB</text>
+        <rect x="70" y="30" width="50" height="55" class="page-row page-flash-safe" stroke="var(--cyan)"/>
+        <text x="95" y="55" class="label-dim" text-anchor="middle" font-size="9">seg 2</text>
+        <rect x="130" y="30" width="50" height="55" class="page-row" fill="rgba(92,225,255,0.08)" stroke="var(--cyan)"/>
+        <text x="155" y="55" class="label-dim" text-anchor="middle" font-size="9">seg 3</text>
+        <rect x="190" y="30" width="50" height="55" class="page-row" fill="rgba(92,225,255,0.08)" stroke="var(--cyan)"/>
+        <text x="215" y="55" class="label-dim" text-anchor="middle" font-size="9">...</text>
+      </g>
+
+      <!-- Unsafe heap -->
+      <g transform="translate(610, 170)">
+        <rect x="0" y="0" width="270" height="100" rx="6" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)" stroke-width="2"/>
+        <text x="135" y="20" class="label-title label-magenta" text-anchor="middle">mi_heap_unsafe (pkey=15)</text>
+        <rect x="10" y="30" width="50" height="55" class="page-row page-flash-unsafe" stroke="var(--magenta)"/>
+        <text x="35" y="55" class="label-dim" text-anchor="middle" font-size="9">seg 1</text>
+        <text x="35" y="70" class="label-dim" text-anchor="middle" font-size="9">4MB</text>
+        <rect x="70" y="30" width="50" height="55" class="page-row" fill="rgba(255,94,219,0.08)" stroke="var(--magenta)"/>
+        <text x="95" y="55" class="label-dim" text-anchor="middle" font-size="9">seg 2</text>
+        <rect x="130" y="30" width="50" height="55" class="page-row" fill="rgba(255,94,219,0.08)" stroke="var(--magenta)"/>
+        <text x="155" y="55" class="label-dim" text-anchor="middle" font-size="9">...</text>
+      </g>
+
+      <!-- Bottom: pkey_mprotect call -->
+      <g transform="translate(20, 200)">
+        <rect x="0" y="0" width="500" height="100" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+        <text x="250" y="20" class="label-title" text-anchor="middle">页面着色机制（首次申请新 segment 时）</text>
+        <text x="20" y="42" class="label-text" font-family="JetBrains Mono">① mmap(NULL, 4MB, RW, ...)  →  得到匿名页</text>
+        <text x="20" y="62" class="label-text" font-family="JetBrains Mono">② <tspan fill="var(--yellow)">pkey_mprotect</tspan>(p, 4MB, RW, <tspan fill="var(--cyan)">heap-&gt;pkey</tspan>)</text>
+        <text x="20" y="82" class="label-dim" font-family="JetBrains Mono">   → PTE 中写入 4-bit pkey · 此后 MMU 自动检查权限</text>
+      </g>
+    </svg>
+    <div class="grid-3" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">两 heap 完全独立</div><p style="font-size:var(--tiny-size);">独立 segment 池 · metadata · free list · TLC</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">天然对齐</div><p style="font-size:var(--tiny-size);">mimalloc segment 4MB / 64KB · 与 4KB 页粒度匹配</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">零数据移动</div><p style="font-size:var(--tiny-size);">分配时直接落到正确域 · 无需拷贝</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S8 · DUAL STACK MECHANISM ============== -->
+<section class="slide" id="s8">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 5 / 12 · 双栈改造</div>
+    <div class="page-num"><span>08</span> / 22</div>
+    <div class="tag-line">Mechanism · SafeStack 风格栈分裂</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #5 · alloca 改写 + 双 SP 维护</div>
+    <h2>双栈机制 · <span class="glow-text">局部变量按污染态分流</span></h2>
+    <svg class="diagram" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet" style="max-height:60vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">同一函数调用 · 两个栈段并行存在</text>
+
+      <!-- Function source code -->
+      <rect x="20" y="40" width="280" height="100" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+      <text x="160" y="58" class="label-title" text-anchor="middle">fn foo() {</text>
+      <text x="40" y="76" class="label-text" font-family="JetBrains Mono">  let a = 42i32;       <tspan class="label-green">// safe</tspan></text>
+      <text x="40" y="94" class="label-text" font-family="JetBrains Mono">  let b: [u8;256];    <tspan class="label-magenta">// 喂给 FFI</tspan></text>
+      <text x="40" y="112" class="label-text" font-family="JetBrains Mono">  unsafe {</text>
+      <text x="40" y="128" class="label-text" font-family="JetBrains Mono">    c_lib(b.as_ptr())</text>
+      <text x="280" y="144" class="label-text" text-anchor="end">  } }</text>
+
+      <!-- SVF arrow split -->
+      <path d="M 300 90 L 360 90" stroke="var(--cyan)" stroke-width="2" fill="none" marker-end="url(#arr3)" class="flow-line active"/>
+      <text x="320" y="80" class="label-dim" font-size="9">SVF 分流</text>
+
+      <!-- Safe stack -->
+      <g transform="translate(380, 30)">
+        <rect x="0" y="0" width="220" height="180" rx="6" fill="rgba(92,225,255,0.05)" stroke="var(--cyan)" stroke-width="2"/>
+        <text x="110" y="20" class="label-title label-cyan" text-anchor="middle">主栈 (%rsp, pkey=1)</text>
+        <text x="110" y="35" class="label-dim" text-anchor="middle" font-size="9">高地址 ↑</text>
+
+        <!-- Stack frames -->
+        <rect x="20" y="50" width="180" height="22" fill="rgba(92,225,255,0.1)" stroke="var(--cyan)"/>
+        <text x="110" y="65" class="label-text" text-anchor="middle">main() 局部</text>
+
+        <rect x="20" y="76" width="180" height="22" fill="rgba(92,225,255,0.1)" stroke="var(--cyan)"/>
+        <text x="110" y="91" class="label-text" text-anchor="middle">caller 局部</text>
+
+        <rect x="20" y="102" width="180" height="30" fill="rgba(110,240,160,0.15)" stroke="var(--green)" class="anim-pulse"/>
+        <text x="110" y="118" class="label-text label-green" text-anchor="middle">foo: %a (i32) ← safe</text>
+
+        <text x="110" y="155" class="label-dim" text-anchor="middle" font-size="9">↓ %rsp</text>
+        <text x="110" y="170" class="label-dim" text-anchor="middle" font-size="9">低地址 ↓</text>
+      </g>
+
+      <!-- Unsafe stack -->
+      <g transform="translate(640, 30)">
+        <rect x="0" y="0" width="220" height="180" rx="6" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)" stroke-width="2"/>
+        <text x="110" y="20" class="label-title label-magenta" text-anchor="middle">Unsafe 栈 (TLS unsafe_sp, pkey=15)</text>
+        <text x="110" y="38" class="label-dim" text-anchor="middle" font-size="9">8MB 预分配</text>
+
+        <rect x="20" y="55" width="180" height="50" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)" class="anim-pulse"/>
+        <text x="110" y="76" class="label-text label-magenta" text-anchor="middle">foo: %b [u8; 256]</text>
+        <text x="110" y="92" class="label-dim" text-anchor="middle" font-size="9">← 由 P5 改写</text>
+
+        <rect x="20" y="115" width="180" height="22" fill="rgba(140,140,140,0.05)" stroke="var(--border)" stroke-dasharray="3 3"/>
+        <text x="110" y="130" class="label-dim" text-anchor="middle" font-size="9">空</text>
+
+        <text x="110" y="160" class="label-dim" text-anchor="middle" font-size="9">↓ unsafe_sp</text>
+      </g>
+
+      <!-- IR rewrite at bottom -->
+      <g transform="translate(20, 220)">
+        <rect x="0" y="0" width="860" height="105" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+        <text x="430" y="20" class="label-title" text-anchor="middle">P5 改写示意 · alloca → unsafe SP gep</text>
+
+        <!-- Before -->
+        <text x="20" y="44" class="label-text label-magenta" font-family="JetBrains Mono">改写前:</text>
+        <text x="20" y="62" class="label-text" font-family="JetBrains Mono">  %a = alloca i32      <tspan class="label-dim">; 主栈</tspan></text>
+        <text x="20" y="78" class="label-text" font-family="JetBrains Mono">  %b = alloca [256xi8] <tspan class="label-dim">; 主栈</tspan></text>
+
+        <line x1="320" y1="60" x2="380" y2="60" stroke="var(--cyan)" stroke-width="2" marker-end="url(#arr3)"/>
+
+        <!-- After -->
+        <text x="430" y="44" class="label-text label-green" font-family="JetBrains Mono">改写后:</text>
+        <text x="430" y="62" class="label-text" font-family="JetBrains Mono">  %a = alloca i32                       <tspan class="label-green">; 保留</tspan></text>
+        <text x="430" y="78" class="label-text" font-family="JetBrains Mono">  %sp = load i8**, @unsafe_sp</text>
+        <text x="430" y="94" class="label-text" font-family="JetBrains Mono">  %b  = gep %sp, -256                  <tspan class="label-magenta">; 迁移</tspan></text>
+      </g>
+    </svg>
+    <div class="grid-3" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">SP 切换时机</div><p style="font-size:var(--tiny-size);">仅在跨域 gate 时切换 %rsp · 函数内通过 @unsafe_sp 直接索引</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">guard page</div><p style="font-size:var(--tiny-size);">unsafe 栈两端 guard page · 溢出 SIGSEGV</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">线程安全</div><p style="font-size:var(--tiny-size);">@unsafe_sp 是 thread_local · pthread_create 时初始化</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S9 · SVF FOUNDATION ============== -->
+<section class="slide" id="s9">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 6 / 12 · SVF 分析地基</div>
+    <div class="page-num"><span>09</span> / 22</div>
+    <div class="tag-line">Mechanism · SVF 框架核心</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #6 · 稀疏值流图（SVFG）</div>
+    <h2>SVF 构建 SVFG · <span class="glow-text">值流可视化动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet" style="max-height:55vh;">
+      <defs>
+        <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--cyan)"/>
+        </marker>
+        <marker id="arr4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--magenta)"/>
+        </marker>
+      </defs>
+
+      <text x="450" y="20" class="label-title" text-anchor="middle">LLVM IR → SVFG · 节点 = 值, 边 = 数据流</text>
+
+      <!-- IR source on left -->
+      <g transform="translate(20, 40)">
+        <rect x="0" y="0" width="280" height="180" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+        <text x="140" y="20" class="label-title" text-anchor="middle">输入：LLVM IR</text>
+        <text x="20" y="42" class="label-text" font-family="JetBrains Mono">define @bar(i32* %p) {</text>
+        <text x="20" y="60" class="label-text" font-family="JetBrains Mono">  %v = load i32, i32* %p</text>
+        <text x="20" y="78" class="label-text" font-family="JetBrains Mono">  %q = alloca i32</text>
+        <text x="20" y="96" class="label-text" font-family="JetBrains Mono">  store i32 %v, i32* %q</text>
+        <text x="20" y="114" class="label-text" font-family="JetBrains Mono">  call @sink(i32* %q)</text>
+        <text x="20" y="132" class="label-text" font-family="JetBrains Mono">}</text>
+      </g>
+
+      <!-- Arrow to SVFG -->
+      <path d="M 310 130 L 360 130" stroke="var(--cyan)" stroke-width="2" fill="none" marker-end="url(#arr4)" class="flow-line active"/>
+      <text x="335" y="120" class="label-dim" text-anchor="middle" font-size="9">SVF</text>
+
+      <!-- SVFG on right -->
+      <g transform="translate(380, 40)">
+        <rect x="0" y="0" width="500" height="240" rx="6" fill="var(--bg-card)" stroke="var(--magenta)"/>
+        <text x="250" y="20" class="label-title label-magenta" text-anchor="middle">输出：SVFG（稀疏值流图）</text>
+
+        <!-- Nodes -->
+        <circle cx="60" cy="60" r="22" fill="rgba(92,225,255,0.15)" stroke="var(--cyan)" class="anim-pulse"/>
+        <text x="60" y="58" class="label-text label-cyan" text-anchor="middle" font-size="10">N1</text>
+        <text x="60" y="72" class="label-dim" text-anchor="middle" font-size="9">%p</text>
+
+        <circle cx="180" cy="60" r="22" fill="rgba(92,225,255,0.15)" stroke="var(--cyan)"/>
+        <text x="180" y="58" class="label-text label-cyan" text-anchor="middle" font-size="10">N2</text>
+        <text x="180" y="72" class="label-dim" text-anchor="middle" font-size="9">%v</text>
+
+        <circle cx="300" cy="60" r="22" fill="rgba(247,208,70,0.15)" stroke="var(--yellow)"/>
+        <text x="300" y="58" class="label-text label-yellow" text-anchor="middle" font-size="10">N4</text>
+        <text x="300" y="72" class="label-dim" text-anchor="middle" font-size="9">store</text>
+
+        <circle cx="420" cy="60" r="22" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="420" y="58" class="label-text label-magenta" text-anchor="middle" font-size="10">N5</text>
+        <text x="420" y="72" class="label-dim" text-anchor="middle" font-size="9">@sink</text>
+
+        <circle cx="300" cy="160" r="22" fill="rgba(110,240,160,0.15)" stroke="var(--green)"/>
+        <text x="300" y="158" class="label-text label-green" text-anchor="middle" font-size="10">N3</text>
+        <text x="300" y="172" class="label-dim" text-anchor="middle" font-size="9">%q (obj)</text>
+
+        <!-- Edges with packets -->
+        <line x1="82" y1="60" x2="158" y2="60" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#arr4)" stroke-dasharray="3 3" class="flow-line active"/>
+        <text x="120" y="50" class="label-dim" text-anchor="middle" font-size="8">DirectVF (load)</text>
+
+        <line x1="202" y1="60" x2="278" y2="60" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#arr4)" stroke-dasharray="3 3" class="flow-line active"/>
+        <text x="240" y="50" class="label-dim" text-anchor="middle" font-size="8">store value</text>
+
+        <line x1="322" y1="60" x2="398" y2="60" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#arr4)" stroke-dasharray="3 3" class="flow-line active"/>
+        <text x="360" y="50" class="label-dim" text-anchor="middle" font-size="8">μ/χ</text>
+
+        <line x1="300" y1="138" x2="300" y2="84" stroke="var(--magenta)" stroke-width="1.5" marker-end="url(#arr4m)" stroke-dasharray="3 3" class="flow-line active"/>
+        <text x="335" y="115" class="label-dim" font-size="8">IndirectVF</text>
+
+        <!-- Traveling packets along edges -->
+        <circle r="4" class="packet" style="offset-path: path('M 82 60 L 158 60'); animation: travel 2s linear infinite;"/>
+        <circle r="4" class="packet" style="offset-path: path('M 202 60 L 278 60'); animation: travel 2s linear infinite; animation-delay: 0.5s;"/>
+        <circle r="4" class="packet" style="offset-path: path('M 322 60 L 398 60'); animation: travel 2s linear infinite; animation-delay: 1s;"/>
+
+        <!-- Legend -->
+        <g transform="translate(20, 200)">
+          <line x1="0" y1="0" x2="20" y2="0" stroke="var(--cyan)" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <text x="25" y="3" class="label-dim" font-size="9">DirectVF · SSA def-use</text>
+          <line x1="0" y1="15" x2="20" y2="15" stroke="var(--magenta)" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <text x="25" y="18" class="label-dim" font-size="9">IndirectVF · 内存值流</text>
+        </g>
+      </g>
+    </svg>
+    <div class="card" style="margin-top:0.3em;padding:0.5em;background:rgba(247,208,70,0.04);border-color:rgba(247,208,70,0.3);">
+      <div class="num" style="color:var(--yellow);">⚠ SVF 能力边界（论文显式承认）</div>
+      <p style="font-size:var(--small-size);"><strong>不处理 IntToPtr/PtrToInt</strong> · <strong>working budget</strong>：context 数超限即停止 · <strong>field-sensitive</strong> 但有上限 · 这些是 TRust 保守标记的根源</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S10 · LAYER 1 TAINT SOURCES ============== -->
+<section class="slide" id="s10">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 7 / 12 · Layer 1 入口标记</div>
+    <div class="page-num"><span>10</span> / 22</div>
+    <div class="tag-line">Mechanism · Pass P1 UnsafetyMarker</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #7 · 污染源识别 · Pass P1</div>
+    <h2>Layer 1 · <span class="glow-text">5 类入口被点亮成红色</span></h2>
+    <svg class="diagram" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet" style="max-height:60vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">P1 扫描 LLVM IR · 5 种污染源依次被识别</text>
+
+      <!-- Rust source (top) -->
+      <g transform="translate(20, 35)">
+        <rect x="0" y="0" width="380" height="120" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+        <text x="190" y="20" class="label-title" text-anchor="middle">Rust 源码</text>
+
+        <text x="20" y="42" class="label-text" font-family="JetBrains Mono">unsafe fn parse_ptr(p: *mut u8)</text>
+        <text x="20" y="58" class="label-text" font-family="JetBrains Mono">extern "C" { fn openssl_decrypt(...); }</text>
+        <text x="20" y="74" class="label-text" font-family="JetBrains Mono">unsafe { asm!("..."); }</text>
+        <text x="20" y="90" class="label-text" font-family="JetBrains Mono">let p = ptr as usize;     // inttoptr</text>
+        <text x="20" y="106" class="label-text" font-family="JetBrains Mono">unsafe { *raw_ptr = ... } // unsafe block</text>
+      </g>
+
+      <!-- rustc fork arrow -->
+      <path d="M 410 90 L 470 90" stroke="var(--cyan)" stroke-width="2" fill="none" marker-end="url(#arr4)" class="flow-line active"/>
+      <text x="440" y="80" class="label-dim" text-anchor="middle" font-size="9">rustc fork</text>
+      <text x="440" y="105" class="label-dim" text-anchor="middle" font-size="9">注入 metadata</text>
+
+      <!-- LLVM IR with metadata -->
+      <g transform="translate(490, 35)">
+        <rect x="0" y="0" width="390" height="120" rx="6" fill="var(--bg-card)" stroke="var(--magenta)"/>
+        <text x="195" y="20" class="label-title label-magenta" text-anchor="middle">LLVM IR + !trust metadata</text>
+
+        <text x="15" y="40" class="label-text" font-family="JetBrains Mono">define i32 @parse_ptr(...)</text>
+        <text x="15" y="55" class="label-text label-magenta" font-family="JetBrains Mono">  !trust !{!"unsafe-fn"}</text>
+        <text x="15" y="73" class="label-text" font-family="JetBrains Mono">declare void @openssl_decrypt(...)</text>
+        <text x="15" y="88" class="label-text label-magenta" font-family="JetBrains Mono">  !trust !{!"ffi"}</text>
+        <text x="15" y="106" class="label-text" font-family="JetBrains Mono">; 5 种入口都被打上 trust 标签</text>
+      </g>
+
+      <!-- Down arrow -->
+      <path d="M 450 165 L 450 195" stroke="var(--magenta)" stroke-width="2" fill="none" marker-end="url(#arr4m)"/>
+      <text x="465" y="183" class="label-dim" font-size="9">P1 扫描</text>
+
+      <!-- 5 source types as nodes (lit up sequentially) -->
+      <g transform="translate(20, 200)">
+        <text x="430" y="0" class="label-title label-magenta" text-anchor="middle">5 类污染源 · 依次被点亮</text>
+
+        <g transform="translate(0, 15)">
+          <rect x="0" y="0" width="160" height="60" rx="6" class="seq-step seq-1" fill="var(--bg-card)" stroke="var(--border)"/>
+          <text x="80" y="20" class="label-text" text-anchor="middle">① unsafe 函数</text>
+          <text x="80" y="38" class="label-dim" text-anchor="middle" font-size="9">function attr</text>
+          <text x="80" y="52" class="label-dim" text-anchor="middle" font-size="9">"trust-unsafe"</text>
+        </g>
+
+        <g transform="translate(175, 15)">
+          <rect x="0" y="0" width="160" height="60" rx="6" class="seq-step seq-2" fill="var(--bg-card)" stroke="var(--border)"/>
+          <text x="80" y="20" class="label-text" text-anchor="middle">② unsafe 块</text>
+          <text x="80" y="38" class="label-dim" text-anchor="middle" font-size="9">!trust metadata</text>
+          <text x="80" y="52" class="label-dim" text-anchor="middle" font-size="9">+ DI scope</text>
+        </g>
+
+        <g transform="translate(350, 15)">
+          <rect x="0" y="0" width="160" height="60" rx="6" class="seq-step seq-3" fill="var(--bg-card)" stroke="var(--border)"/>
+          <text x="80" y="20" class="label-text" text-anchor="middle">③ FFI 函数</text>
+          <text x="80" y="38" class="label-dim" text-anchor="middle" font-size="9">external linkage</text>
+          <text x="80" y="52" class="label-dim" text-anchor="middle" font-size="9">+ dso_local</text>
+        </g>
+
+        <g transform="translate(525, 15)">
+          <rect x="0" y="0" width="160" height="60" rx="6" class="seq-step seq-4" fill="var(--bg-card)" stroke="var(--border)"/>
+          <text x="80" y="20" class="label-text" text-anchor="middle">④ 内联汇编</text>
+          <text x="80" y="38" class="label-dim" text-anchor="middle" font-size="9">call void asm</text>
+          <text x="80" y="52" class="label-dim" text-anchor="middle" font-size="9">sideeffect</text>
+        </g>
+
+        <g transform="translate(700, 15)">
+          <rect x="0" y="0" width="160" height="60" rx="6" class="seq-step seq-5" fill="var(--bg-card)" stroke="var(--border)"/>
+          <text x="80" y="20" class="label-text" text-anchor="middle">⑤ 裸指针</text>
+          <text x="80" y="38" class="label-dim" text-anchor="middle" font-size="9">inttoptr</text>
+          <text x="80" y="52" class="label-dim" text-anchor="middle" font-size="9">in unsafe ctx</text>
+        </g>
+
+        <!-- Bottom: source set -->
+        <g transform="translate(0, 95)">
+          <rect x="0" y="0" width="860" height="35" rx="6" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)"/>
+          <text x="430" y="22" class="label-text label-magenta" text-anchor="middle">→ taint_sources = { F1, F2, ..., Fn } · 传给 Pass P3</text>
+        </g>
+      </g>
+    </svg>
+    <p class="mono" style="margin-top:0.2em;text-align:center;font-size:var(--tiny-size);color:var(--text-dim);">
+      &gt; rustc 改造（仓库 rust/ 占 9.6% 代码量）确保 LLVM IR 保留 unsafety 信息 · 否则纯 LLVM 层无法区分
+    </p>
+  </div>
+</section>
+
+<!-- ============== S11 · LAYER 2 PROPAGATION ============== -->
+<section class="slide" id="s11">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 8 / 12 · Layer 2 污染传播</div>
+    <div class="page-num"><span>11</span> / 22</div>
+    <div class="tag-line">Mechanism · Pass P3 TaintPropagator</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #8 · 在 SVFG 上前向传播 · Pass P3</div>
+    <h2>污染传播 · <span class="glow-text">BFS 染色动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet" style="max-height:55vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">从污染源（红色）开始 · 沿 SVFG 边逐层染色</text>
+
+      <!-- Source node (always tainted) -->
+      <g transform="translate(60, 140)">
+        <circle cx="0" cy="0" r="28" fill="rgba(255,94,219,0.4)" stroke="var(--magenta)" stroke-width="2" class="anim-pulse" filter="drop-shadow(0 0 8px var(--magenta))"/>
+        <text x="0" y="-2" class="label-text label-magenta" text-anchor="middle">SOURCE</text>
+        <text x="0" y="12" class="label-dim" text-anchor="middle" font-size="9">unsafe fn</text>
+      </g>
+      <text x="60" y="200" class="label-dim" text-anchor="middle" font-size="9">起点</text>
+
+      <!-- Layer 1 nodes (染色) -->
+      <circle cx="200" cy="80" r="20" class="taint-node-1" stroke="var(--border)"/>
+      <text x="200" y="84" class="label-text" text-anchor="middle" font-size="9">N1</text>
+
+      <circle cx="200" cy="140" r="20" class="taint-node-1" stroke="var(--border)"/>
+      <text x="200" y="144" class="label-text" text-anchor="middle" font-size="9">N2</text>
+
+      <circle cx="200" cy="200" r="20" class="taint-node-1" stroke="var(--border)"/>
+      <text x="200" y="204" class="label-text" text-anchor="middle" font-size="9">N3</text>
+
+      <!-- Edges from source -->
+      <line x1="88" y1="135" x2="180" y2="85" stroke="var(--magenta)" stroke-width="1.5" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="88" y1="140" x2="180" y2="140" stroke="var(--magenta)" stroke-width="1.5" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="88" y1="145" x2="180" y2="195" stroke="var(--magenta)" stroke-width="1.5" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+
+      <!-- Layer 2 nodes -->
+      <circle cx="350" cy="50" r="20" class="taint-node-2" stroke="var(--border)"/>
+      <text x="350" y="54" class="label-text" text-anchor="middle" font-size="9">N4</text>
+
+      <circle cx="350" cy="110" r="20" class="taint-node-2" stroke="var(--border)"/>
+      <text x="350" y="114" class="label-text" text-anchor="middle" font-size="9">N5</text>
+
+      <circle cx="350" cy="170" r="20" class="taint-node-3" stroke="var(--border)"/>
+      <text x="350" y="174" class="label-text" text-anchor="middle" font-size="9">N6</text>
+
+      <circle cx="350" cy="230" r="20" class="taint-node-3" stroke="var(--border)"/>
+      <text x="350" y="234" class="label-text" text-anchor="middle" font-size="9">N7</text>
+
+      <!-- Edges to layer 2 -->
+      <line x1="220" y1="80" x2="330" y2="55" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="220" y1="80" x2="330" y2="105" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="220" y1="140" x2="330" y2="115" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="220" y1="200" x2="330" y2="170" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="220" y1="200" x2="330" y2="225" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+
+      <!-- Layer 3 (alloc sites) -->
+      <rect x="490" y="35" width="100" height="40" rx="6" class="taint-node-4" stroke="var(--border)"/>
+      <text x="540" y="50" class="label-text" text-anchor="middle" font-size="10">__rust_alloc</text>
+      <text x="540" y="65" class="label-dim" text-anchor="middle" font-size="8">site #1</text>
+
+      <rect x="490" y="95" width="100" height="40" rx="6" class="taint-node-4" stroke="var(--border)"/>
+      <text x="540" y="110" class="label-text" text-anchor="middle" font-size="10">alloca</text>
+      <text x="540" y="125" class="label-dim" text-anchor="middle" font-size="8">site #2</text>
+
+      <rect x="490" y="155" width="100" height="40" rx="6" class="taint-node-5" stroke="var(--border)"/>
+      <text x="540" y="170" class="label-text" text-anchor="middle" font-size="10">__rust_alloc</text>
+      <text x="540" y="185" class="label-dim" text-anchor="middle" font-size="8">site #3</text>
+
+      <rect x="490" y="215" width="100" height="40" rx="6" class="taint-node-5" stroke="var(--border)"/>
+      <text x="540" y="230" class="label-text" text-anchor="middle" font-size="10">alloca</text>
+      <text x="540" y="245" class="label-dim" text-anchor="middle" font-size="8">site #4</text>
+
+      <line x1="370" y1="50" x2="488" y2="55" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="370" y1="110" x2="488" y2="115" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="370" y1="170" x2="488" y2="175" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+      <line x1="370" y1="230" x2="488" y2="235" stroke="var(--magenta)" stroke-width="1" stroke-dasharray="3 3" class="flow-line active" marker-end="url(#arr4m)"/>
+
+      <!-- Decision (right) -->
+      <g transform="translate(640, 35)">
+        <rect x="0" y="0" width="220" height="220" rx="6" fill="var(--bg-card)" stroke="var(--magenta)"/>
+        <text x="110" y="20" class="label-title label-magenta" text-anchor="middle">改写决策（P4/P5）</text>
+
+        <rect x="15" y="35" width="190" height="32" rx="4" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="110" y="55" class="label-text label-magenta" text-anchor="middle">→ __rust_alloc_unsafe</text>
+
+        <rect x="15" y="75" width="190" height="32" rx="4" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="110" y="95" class="label-text label-magenta" text-anchor="middle">→ unsafe stack gep</text>
+
+        <rect x="15" y="115" width="190" height="32" rx="4" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="110" y="135" class="label-text label-magenta" text-anchor="middle">→ __rust_alloc_unsafe</text>
+
+        <rect x="15" y="155" width="190" height="32" rx="4" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="110" y="175" class="label-text label-magenta" text-anchor="middle">→ unsafe stack gep</text>
+
+        <text x="110" y="205" class="label-dim" text-anchor="middle" font-size="9">所有 tainted 站点 → unsafe 域</text>
+      </g>
+
+      <line x1="592" y1="55" x2="638" y2="55" stroke="var(--magenta)" stroke-width="1" marker-end="url(#arr4m)"/>
+      <line x1="592" y1="115" x2="638" y2="115" stroke="var(--magenta)" stroke-width="1" marker-end="url(#arr4m)"/>
+      <line x1="592" y1="175" x2="638" y2="175" stroke="var(--magenta)" stroke-width="1" marker-end="url(#arr4m)"/>
+      <line x1="592" y1="235" x2="638" y2="235" stroke="var(--magenta)" stroke-width="1" marker-end="url(#arr4m)"/>
+
+      <!-- Layer labels -->
+      <text x="60" y="270" class="label-dim" text-anchor="middle" font-size="9">SOURCE</text>
+      <text x="200" y="270" class="label-dim" text-anchor="middle" font-size="9">Layer 1</text>
+      <text x="350" y="280" class="label-dim" text-anchor="middle" font-size="9">Layer 2-3</text>
+      <text x="540" y="280" class="label-dim" text-anchor="middle" font-size="9">分配点</text>
+      <text x="750" y="270" class="label-dim" text-anchor="middle" font-size="9">改写决策</text>
+    </svg>
+    <div class="grid-4" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">规则 ① Direct</div><p style="font-size:var(--tiny-size);">SSA 寄存器值流</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">规则 ② Indirect</div><p style="font-size:var(--tiny-size);">store / load 内存</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">规则 ③ Call</div><p style="font-size:var(--tiny-size);">参数 / 返回值跨过程</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">规则 ④ Field</div><p style="font-size:var(--tiny-size);">struct.a ≠ struct.b</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S12 · LAYER 3 ALLOC REWRITE ============== -->
+<section class="slide" id="s12">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 9 / 12 · Layer 3 分配改写</div>
+    <div class="page-num"><span>12</span> / 22</div>
+    <div class="tag-line">Mechanism · Pass P4/P5 改写示例</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #9 · 改写所有分配点 · Pass P4 + P5</div>
+    <h2>分配点路由 · <span class="glow-text">三个 IR 站点的命运</span></h2>
+    <svg class="diagram" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet" style="max-height:55vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">3 个分配点 · 各自命运分流</text>
+
+      <!-- Original IR (left) -->
+      <g transform="translate(20, 35)">
+        <rect x="0" y="0" width="280" height="240" rx="6" fill="var(--bg-card)" stroke="var(--cyan)"/>
+        <text x="140" y="20" class="label-title" text-anchor="middle">原 IR @process</text>
+
+        <!-- Site 1 -->
+        <rect x="15" y="35" width="250" height="50" rx="4" fill="rgba(110,240,160,0.05)" stroke="var(--green)"/>
+        <text x="25" y="52" class="label-text" font-size="10" font-family="JetBrains Mono">%v = call __rust_alloc(64)</text>
+        <text x="25" y="68" class="label-dim" font-size="9">SVF: 仅 safe 使用</text>
+        <text x="25" y="80" class="label-green" font-size="9" font-family="JetBrains Mono">→ safe</text>
+
+        <!-- Site 2 -->
+        <rect x="15" y="95" width="250" height="60" rx="4" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)"/>
+        <text x="25" y="112" class="label-text" font-size="10" font-family="JetBrains Mono">%b = call __rust_alloc(256)</text>
+        <text x="25" y="128" class="label-text" font-size="10" font-family="JetBrains Mono">call @openssl_decrypt(%b)</text>
+        <text x="25" y="142" class="label-magenta" font-size="9" font-family="JetBrains Mono">→ tainted (流向 FFI)</text>
+
+        <!-- Site 3 -->
+        <rect x="15" y="165" width="250" height="60" rx="4" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)"/>
+        <text x="25" y="182" class="label-text" font-size="10" font-family="JetBrains Mono">%s = alloca [128 x i8]</text>
+        <text x="25" y="198" class="label-text" font-size="10" font-family="JetBrains Mono">call @c_lib_proc(%s)</text>
+        <text x="25" y="212" class="label-magenta" font-size="9" font-family="JetBrains Mono">→ tainted alloca</text>
+      </g>
+
+      <!-- Pass arrows -->
+      <path d="M 310 60 L 350 60" stroke="var(--green)" stroke-width="2" fill="none" marker-end="url(#arr4)" class="flow-line active"/>
+      <text x="330" y="50" class="label-text label-green" font-size="9">P4 keep</text>
+
+      <path d="M 310 125 L 350 125" stroke="var(--magenta)" stroke-width="2" fill="none" marker-end="url(#arr4m)" class="flow-line active"/>
+      <text x="330" y="115" class="label-text label-magenta" font-size="9">P4 rewrite</text>
+
+      <path d="M 310 195 L 350 195" stroke="var(--magenta)" stroke-width="2" fill="none" marker-end="url(#arr4m)" class="flow-line active"/>
+      <text x="330" y="185" class="label-text label-magenta" font-size="9">P5 split</text>
+
+      <!-- Rewritten IR (right) -->
+      <g transform="translate(360, 35)">
+        <rect x="0" y="0" width="290" height="240" rx="6" fill="var(--bg-card)" stroke="var(--green)"/>
+        <text x="145" y="20" class="label-title label-green" text-anchor="middle">改写后 IR</text>
+
+        <rect x="15" y="35" width="260" height="50" rx="4" fill="rgba(110,240,160,0.1)" stroke="var(--green)"/>
+        <text x="25" y="52" class="label-text label-green" font-size="10" font-family="JetBrains Mono">%v = __rust_alloc_safe(64)</text>
+        <text x="25" y="68" class="label-dim" font-size="9">→ mi_heap_safe (pkey=1)</text>
+
+        <rect x="15" y="95" width="260" height="60" rx="4" fill="rgba(255,94,219,0.1)" stroke="var(--magenta)"/>
+        <text x="25" y="112" class="label-text label-magenta" font-size="10" font-family="JetBrains Mono">%b = __rust_alloc_unsafe(256)</text>
+        <text x="25" y="128" class="label-text label-yellow" font-size="10" font-family="JetBrains Mono">__gate_call_openssl_decrypt(%b)</text>
+        <text x="25" y="142" class="label-dim" font-size="9">→ mi_heap_unsafe (pkey=15)</text>
+
+        <rect x="15" y="165" width="260" height="60" rx="4" fill="rgba(255,94,219,0.1)" stroke="var(--magenta)"/>
+        <text x="25" y="182" class="label-text label-magenta" font-size="10" font-family="JetBrains Mono">%s = gep @unsafe_sp, -128</text>
+        <text x="25" y="198" class="label-text label-yellow" font-size="10" font-family="JetBrains Mono">__gate_call_c_lib_proc(%s)</text>
+        <text x="25" y="212" class="label-dim" font-size="9">→ unsafe stack (pkey=15)</text>
+      </g>
+
+      <!-- Final destinations -->
+      <g transform="translate(680, 35)">
+        <rect x="0" y="0" width="200" height="65" rx="6" fill="rgba(92,225,255,0.05)" stroke="var(--cyan)"/>
+        <text x="100" y="20" class="label-title label-cyan" text-anchor="middle">SAFE 域 (pkey=1)</text>
+        <rect x="15" y="30" width="40" height="25" class="page-flash-safe" stroke="var(--cyan)"/>
+        <text x="100" y="48" class="label-text label-green" text-anchor="middle" font-size="10">%v ← 64B</text>
+
+        <rect x="0" y="80" width="200" height="160" rx="6" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)"/>
+        <text x="100" y="100" class="label-title label-magenta" text-anchor="middle">UNSAFE 域 (pkey=15)</text>
+        <rect x="15" y="110" width="50" height="40" class="page-flash-unsafe" stroke="var(--magenta)"/>
+        <text x="100" y="135" class="label-text label-magenta" text-anchor="middle" font-size="10">%b ← 256B (heap)</text>
+
+        <rect x="15" y="160" width="50" height="40" class="page-flash-unsafe" stroke="var(--magenta)"/>
+        <text x="100" y="185" class="label-text label-magenta" text-anchor="middle" font-size="10">%s ← 128B (stack)</text>
+
+        <text x="100" y="225" class="label-dim" text-anchor="middle" font-size="9">2 个站点合并到同域</text>
+      </g>
+
+      <line x1="650" y1="60" x2="678" y2="60" stroke="var(--green)" stroke-width="1.5" marker-end="url(#arr4)"/>
+      <line x1="650" y1="125" x2="678" y2="125" stroke="var(--magenta)" stroke-width="1.5" marker-end="url(#arr4m)"/>
+      <line x1="650" y1="195" x2="678" y2="195" stroke="var(--magenta)" stroke-width="1.5" marker-end="url(#arr4m)"/>
+    </svg>
+    <p class="mono" style="margin-top:0.3em;text-align:center;font-size:var(--tiny-size);color:var(--text-dim);">
+      &gt; P4 改写堆分配（call replacement）· P5 改写栈分配（alloca → gep）· 边界调用包装为 __gate_call_*
+    </p>
+  </div>
+</section>
+
+<!-- ============== S13 · GATE ENTER ============== -->
+<section class="slide" id="s13">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 10 / 12 · Gate Enter 序列</div>
+    <div class="page-num"><span>13</span> / 22</div>
+    <div class="tag-line">Mechanism · Domain Switch · Safe→Untrusted</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #10 · Gate 进入序列 · 6 步循环高亮</div>
+    <h2>SAFE → UNTRUSTED · <span class="glow-text">6 步序列动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet" style="max-height:60vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">每步循环高亮 · 总耗时 ~50ns</text>
+
+      <!-- Left: Safe domain -->
+      <rect x="20" y="40" width="120" height="280" rx="8" fill="rgba(92,225,255,0.05)" stroke="var(--cyan)" stroke-width="2"/>
+      <text x="80" y="60" class="label-title label-cyan" text-anchor="middle">SAFE 域</text>
+      <text x="80" y="76" class="label-dim" text-anchor="middle" font-size="9">PKRU = 0x40000004</text>
+
+      <!-- Right: Untrusted -->
+      <rect x="760" y="40" width="120" height="280" rx="8" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)" stroke-width="2"/>
+      <text x="820" y="60" class="label-title label-magenta" text-anchor="middle">UNSAFE 域</text>
+      <text x="820" y="76" class="label-dim" text-anchor="middle" font-size="9">PKRU = 0x55555510</text>
+
+      <!-- 6 steps in middle -->
+      <g transform="translate(160, 50)">
+        <!-- Step 1 -->
+        <rect x="0" y="0" width="600" height="38" rx="6" class="seq-step seq-1" stroke="var(--border)"/>
+        <text x="20" y="22" class="label-text" font-family="JetBrains Mono">①</text>
+        <text x="50" y="22" class="label-text">push rbp / rbx / r12-r15 → safe 栈</text>
+        <text x="580" y="22" class="label-dim" font-size="9" text-anchor="end">~5ns</text>
+
+        <!-- Step 2 -->
+        <rect x="0" y="44" width="600" height="38" rx="6" class="seq-step seq-2" stroke="var(--border)"/>
+        <text x="20" y="66" class="label-text" font-family="JetBrains Mono">②</text>
+        <text x="50" y="66" class="label-text">mov [fs:safe_sp_save], rsp ; mov rsp, [fs:unsafe_sp]</text>
+        <text x="580" y="66" class="label-dim" font-size="9" text-anchor="end">~3ns</text>
+
+        <!-- Step 3 -->
+        <rect x="0" y="88" width="600" height="38" rx="6" class="seq-step seq-3" stroke="var(--border)"/>
+        <text x="20" y="110" class="label-text" font-family="JetBrains Mono">③</text>
+        <text x="50" y="110" class="label-text">call __sanitize_args  → 验证指针 / 拷贝参数</text>
+        <text x="580" y="110" class="label-dim" font-size="9" text-anchor="end">~10ns</text>
+
+        <!-- Step 4 (key step) -->
+        <rect x="0" y="132" width="600" height="38" rx="6" class="seq-step seq-4" stroke="var(--yellow)" stroke-width="2"/>
+        <text x="20" y="154" class="label-text label-yellow" font-family="JetBrains Mono">④</text>
+        <text x="50" y="154" class="label-text label-yellow" font-family="JetBrains Mono">wrpkru EAX=0x55555510  ← PKRU 翻转</text>
+        <text x="580" y="154" class="label-dim" font-size="9" text-anchor="end">~25ns</text>
+
+        <!-- Step 5 -->
+        <rect x="0" y="176" width="600" height="38" rx="6" class="seq-step seq-5" stroke="var(--border)"/>
+        <text x="20" y="198" class="label-text" font-family="JetBrains Mono">⑤</text>
+        <text x="50" y="198" class="label-text">cmp eax, 0x55555510 ; jne __abort   ← 防 ROP</text>
+        <text x="580" y="198" class="label-dim" font-size="9" text-anchor="end">~2ns</text>
+
+        <!-- Step 6 -->
+        <rect x="0" y="220" width="600" height="38" rx="6" class="seq-step seq-6" stroke="var(--border)"/>
+        <text x="20" y="242" class="label-text" font-family="JetBrains Mono">⑥</text>
+        <text x="50" y="242" class="label-text">jmp openssl_decrypt   ← 进入 untrusted 函数</text>
+        <text x="580" y="242" class="label-dim" font-size="9" text-anchor="end">~5ns</text>
+
+        <!-- Total -->
+        <rect x="0" y="264" width="600" height="36" rx="6" fill="rgba(110,240,160,0.05)" stroke="var(--green)"/>
+        <text x="300" y="286" class="label-text label-green" text-anchor="middle">总计 ≈ 50ns · 内联汇编 · 无函数调用开销</text>
+      </g>
+
+      <!-- Traveling packet from safe to unsafe along sequence -->
+      <circle r="6" class="packet" style="offset-path: path('M 80 200 L 460 80 L 460 290 L 820 200'); animation: travel 6s linear infinite;"/>
+    </svg>
+    <div class="grid-3" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">关键 #1 顺序</div><p style="font-size:var(--tiny-size);">SP 切换在 WRPKRU 前 · 否则 push/pop #PF</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">关键 #2 验证</div><p style="font-size:var(--tiny-size);">cmp+jne 防 ROP 跳到 wrpkru 之后</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">关键 #3 TLS</div><p style="font-size:var(--tiny-size);">fs: 段寄存器 · 多线程独立 unsafe SP</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S14 · GATE EXIT ============== -->
+<section class="slide" id="s14">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 11 / 12 · Gate Exit 序列</div>
+    <div class="page-num"><span>14</span> / 22</div>
+    <div class="tag-line">Mechanism · Domain Switch · Untrusted→Safe</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #11 · Gate 返回序列 · 反向 + 多重防御</div>
+    <h2>UNTRUSTED → SAFE · <span class="glow-text">5 步逆序动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet" style="max-height:60vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">从 untrusted 域返回 · 多重验证后回到 safe 域</text>
+
+      <!-- Right: Unsafe (start) -->
+      <rect x="760" y="40" width="120" height="280" rx="8" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)" stroke-width="2"/>
+      <text x="820" y="60" class="label-title label-magenta" text-anchor="middle">UNSAFE 域</text>
+      <text x="820" y="76" class="label-dim" text-anchor="middle" font-size="9">起点</text>
+
+      <!-- Left: Safe (end) -->
+      <rect x="20" y="40" width="120" height="280" rx="8" fill="rgba(92,225,255,0.05)" stroke="var(--cyan)" stroke-width="2"/>
+      <text x="80" y="60" class="label-title label-cyan" text-anchor="middle">SAFE 域</text>
+      <text x="80" y="76" class="label-dim" text-anchor="middle" font-size="9">终点</text>
+
+      <!-- 5 steps reverse -->
+      <g transform="translate(160, 60)">
+        <!-- Step 1 (key) -->
+        <rect x="0" y="0" width="600" height="42" rx="6" class="seq-step seq-back-1" stroke="var(--yellow)" stroke-width="2"/>
+        <text x="20" y="25" class="label-text label-yellow" font-family="JetBrains Mono">①</text>
+        <text x="50" y="25" class="label-text label-yellow" font-family="JetBrains Mono">wrpkru EAX=0x40000004  ← 切回 safe 模式</text>
+        <text x="580" y="25" class="label-dim" font-size="9" text-anchor="end">~25ns</text>
+
+        <!-- Step 2 with shield -->
+        <rect x="0" y="48" width="600" height="60" rx="6" class="seq-step seq-back-2" stroke="var(--magenta)" stroke-width="2"/>
+        <text x="20" y="73" class="label-text label-magenta" font-family="JetBrains Mono">②</text>
+        <text x="50" y="73" class="label-text label-magenta">call __validate_return ← 防御点</text>
+        <text x="50" y="92" class="label-dim" font-size="9">• 验证返回指针 ∈ unsafe 域 (防悬挂指针逃逸)</text>
+        <text x="580" y="73" class="label-dim" font-size="9" text-anchor="end">~10ns</text>
+
+        <!-- Step 3 -->
+        <rect x="0" y="114" width="600" height="42" rx="6" class="seq-step seq-back-3" stroke="var(--border)"/>
+        <text x="20" y="139" class="label-text" font-family="JetBrains Mono">③</text>
+        <text x="50" y="139" class="label-text">mov [fs:unsafe_sp], rsp ; mov rsp, [fs:safe_sp_save]</text>
+        <text x="580" y="139" class="label-dim" font-size="9" text-anchor="end">~3ns</text>
+
+        <!-- Step 4 -->
+        <rect x="0" y="162" width="600" height="42" rx="6" class="seq-step seq-back-4" stroke="var(--border)"/>
+        <text x="20" y="187" class="label-text" font-family="JetBrains Mono">④</text>
+        <text x="50" y="187" class="label-text">pop r15 / r14 / r13 / r12 / rbx / rbp ← 恢复寄存器</text>
+        <text x="580" y="187" class="label-dim" font-size="9" text-anchor="end">~5ns</text>
+
+        <!-- Step 5 -->
+        <rect x="0" y="210" width="600" height="42" rx="6" class="seq-step seq-back-5" stroke="var(--border)"/>
+        <text x="20" y="235" class="label-text" font-family="JetBrains Mono">⑤</text>
+        <text x="50" y="235" class="label-text">ret ← 返回原 safe 调用点</text>
+        <text x="580" y="235" class="label-dim" font-size="9" text-anchor="end">~2ns</text>
+
+        <!-- Defense shields -->
+        <g transform="translate(0, 260)">
+          <rect x="0" y="0" width="195" height="20" rx="4" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)"/>
+          <text x="97" y="14" class="label-text label-magenta" text-anchor="middle" font-size="9">🛡 防御 ① 悬挂指针</text>
+
+          <rect x="200" y="0" width="195" height="20" rx="4" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)"/>
+          <text x="297" y="14" class="label-text label-magenta" text-anchor="middle" font-size="9">🛡 防御 ② 栈不平衡</text>
+
+          <rect x="400" y="0" width="195" height="20" rx="4" fill="rgba(255,94,219,0.05)" stroke="var(--magenta)"/>
+          <text x="497" y="14" class="label-text label-magenta" text-anchor="middle" font-size="9">🛡 防御 ③ WRPKRU 中点</text>
+        </g>
+      </g>
+
+      <!-- Reverse traveling packet -->
+      <circle r="6" class="packet magenta" style="offset-path: path('M 820 200 L 460 80 L 460 280 L 80 200'); animation: travel 6s linear infinite;"/>
+    </svg>
+    <p class="mono" style="margin-top:0.3em;text-align:center;font-size:var(--tiny-size);color:var(--text-dim);">
+      &gt; 关键差异：返回比进入多了"返回值验证"步骤 · 防止 untrusted 把指向其内部的指针返回给 safe
+    </p>
+  </div>
+</section>
+
+<!-- ============== S15 · END-TO-END FLOW ============== -->
+<section class="slide" id="s15">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>机制 12 / 12 · 端到端调用追踪</div>
+    <div class="page-num"><span>15</span> / 22</div>
+    <div class="tag-line">Mechanism · End-to-End Trace</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">机制 #12 · 一次完整跨域调用的端到端时间线</div>
+    <h2>从 Vec.push 到 FFI return · <span class="glow-text">100ns 时间线动画</span></h2>
+    <svg class="diagram" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet" style="max-height:60vh;">
+      <text x="450" y="20" class="label-title" text-anchor="middle">用户代码：unsafe { c_func(v.as_mut_ptr()); }</text>
+
+      <!-- Timeline axis -->
+      <line x1="50" y1="280" x2="850" y2="280" stroke="var(--cyan)" stroke-width="2"/>
+      <text x="50" y="305" class="label-dim" font-size="9">T+0ns</text>
+      <text x="450" y="305" class="label-dim" font-size="9">T+50ns (gate)</text>
+      <text x="650" y="305" class="label-dim" font-size="9">T+? (FFI)</text>
+      <text x="830" y="305" class="label-dim" font-size="9" text-anchor="end">T+100ns+ (return)</text>
+
+      <!-- 6 phase boxes along timeline -->
+      <!-- Phase 1: alloc -->
+      <g transform="translate(50, 50)">
+        <rect x="0" y="0" width="120" height="200" rx="6" class="seq-step seq-1" stroke="var(--cyan)"/>
+        <text x="60" y="20" class="label-text label-cyan" text-anchor="middle">① Alloc</text>
+        <text x="60" y="40" class="label-dim" text-anchor="middle" font-size="9">SVF 已判 v→unsafe</text>
+        <line x1="60" y1="55" x2="60" y2="80" stroke="var(--cyan)"/>
+        <rect x="20" y="85" width="80" height="40" fill="rgba(255,94,219,0.15)" stroke="var(--magenta)"/>
+        <text x="60" y="105" class="label-text label-magenta" text-anchor="middle" font-size="10">v.ptr</text>
+        <text x="60" y="118" class="label-dim" text-anchor="middle" font-size="9">→ pkey=15</text>
+        <text x="60" y="145" class="label-dim" text-anchor="middle" font-size="9">5ns</text>
+        <line x1="60" y1="170" x2="60" y2="195" stroke="var(--cyan)" stroke-dasharray="3 3"/>
+        <text x="60" y="190" class="label-dim" text-anchor="middle" font-size="9">|</text>
+      </g>
+
+      <!-- Phase 2: gate enter -->
+      <g transform="translate(180, 50)">
+        <rect x="0" y="0" width="240" height="200" rx="6" class="seq-step seq-2" stroke="var(--yellow)"/>
+        <text x="120" y="20" class="label-text label-yellow" text-anchor="middle">② Gate Enter</text>
+        <text x="120" y="38" class="label-dim" text-anchor="middle" font-size="9">~50ns 总和</text>
+
+        <rect x="10" y="50" width="220" height="14" rx="2" fill="rgba(92,225,255,0.1)"/>
+        <text x="15" y="61" class="label-dim" font-size="8">push regs · 5ns</text>
+
+        <rect x="10" y="68" width="200" height="14" rx="2" fill="rgba(92,225,255,0.1)"/>
+        <text x="15" y="79" class="label-dim" font-size="8">SP swap · 3ns</text>
+
+        <rect x="10" y="86" width="180" height="14" rx="2" fill="rgba(110,240,160,0.1)"/>
+        <text x="15" y="97" class="label-dim" font-size="8">sanitize_args · 10ns</text>
+
+        <rect x="10" y="104" width="220" height="14" rx="2" fill="rgba(247,208,70,0.2)" class="anim-blink"/>
+        <text x="15" y="115" class="label-dim label-yellow" font-size="8">wrpkru · 25ns ⚡</text>
+
+        <rect x="10" y="122" width="80" height="14" rx="2" fill="rgba(92,225,255,0.1)"/>
+        <text x="15" y="133" class="label-dim" font-size="8">cmp+jne · 2ns</text>
+
+        <rect x="10" y="140" width="100" height="14" rx="2" fill="rgba(92,225,255,0.1)"/>
+        <text x="15" y="151" class="label-dim" font-size="8">jmp c_func · 5ns</text>
+
+        <text x="120" y="180" class="label-dim" text-anchor="middle" font-size="9">SAFE 域 → UNSAFE 域</text>
+      </g>
+
+      <!-- Phase 3: FFI execution -->
+      <g transform="translate(430, 50)">
+        <rect x="0" y="0" width="180" height="200" rx="6" class="seq-step seq-3" stroke="var(--magenta)"/>
+        <text x="90" y="20" class="label-text label-magenta" text-anchor="middle">③ FFI 执行</text>
+        <text x="90" y="40" class="label-dim" text-anchor="middle" font-size="9">untrusted 域内</text>
+
+        <rect x="20" y="55" width="140" height="30" rx="4" fill="rgba(110,240,160,0.1)" stroke="var(--green)"/>
+        <text x="90" y="74" class="label-text label-green" text-anchor="middle" font-size="10">读写 v 缓冲 ✓</text>
+
+        <rect x="20" y="95" width="140" height="40" rx="4" fill="rgba(255,94,219,0.1)" stroke="var(--magenta)" stroke-dasharray="3 3"/>
+        <text x="90" y="113" class="label-text label-magenta" text-anchor="middle" font-size="10">尝试读 safe</text>
+        <text x="90" y="127" class="label-text label-magenta" text-anchor="middle" font-size="10">→ #PF 拒绝</text>
+
+        <text x="90" y="160" class="label-dim" text-anchor="middle" font-size="9">合法操作 ✓</text>
+        <text x="90" y="175" class="label-dim" text-anchor="middle" font-size="9">越界访问 ✗</text>
+      </g>
+
+      <!-- Phase 4: gate return -->
+      <g transform="translate(620, 50)">
+        <rect x="0" y="0" width="220" height="200" rx="6" class="seq-step seq-4" stroke="var(--yellow)"/>
+        <text x="110" y="20" class="label-text label-yellow" text-anchor="middle">④ Gate Return</text>
+        <text x="110" y="38" class="label-dim" text-anchor="middle" font-size="9">~50ns</text>
+
+        <rect x="10" y="50" width="200" height="14" rx="2" fill="rgba(247,208,70,0.2)" class="anim-blink"/>
+        <text x="15" y="61" class="label-dim label-yellow" font-size="8">wrpkru ← safe · 25ns ⚡</text>
+
+        <rect x="10" y="68" width="180" height="14" rx="2" fill="rgba(255,94,219,0.1)"/>
+        <text x="15" y="79" class="label-dim label-magenta" font-size="8">validate_return 🛡 · 10ns</text>
+
+        <rect x="10" y="86" width="200" height="14" rx="2" fill="rgba(92,225,255,0.1)"/>
+        <text x="15" y="97" class="label-dim" font-size="8">SP restore · 3ns</text>
+
+        <rect x="10" y="104" width="160" height="14" rx="2" fill="rgba(92,225,255,0.1)"/>
+        <text x="15" y="115" class="label-dim" font-size="8">pop regs · 5ns</text>
+
+        <rect x="10" y="122" width="80" height="14" rx="2" fill="rgba(110,240,160,0.1)"/>
+        <text x="15" y="133" class="label-dim" font-size="8">ret · 2ns</text>
+
+        <text x="110" y="170" class="label-dim" text-anchor="middle" font-size="9">UNSAFE → SAFE</text>
+      </g>
+
+      <!-- Big traveling packet across whole timeline -->
+      <circle r="8" class="packet" style="offset-path: path('M 110 280 L 110 240 L 300 240 L 300 280 L 520 280 L 520 240 L 730 240 L 730 280'); animation: travel 8s linear infinite;"/>
+
+      <!-- PKRU state at bottom -->
+      <text x="50" y="335" class="label-dim" font-size="9">PKRU:</text>
+      <text x="120" y="335" class="label-cyan" font-size="10" font-family="JetBrains Mono">SAFE</text>
+      <text x="280" y="335" class="label-yellow" font-size="10" font-family="JetBrains Mono">⚡切换</text>
+      <text x="500" y="335" class="label-magenta" font-size="10" font-family="JetBrains Mono">UNSAFE</text>
+      <text x="700" y="335" class="label-yellow" font-size="10" font-family="JetBrains Mono">⚡切换</text>
+      <text x="830" y="335" class="label-cyan" font-size="10" font-family="JetBrains Mono" text-anchor="end">SAFE</text>
+    </svg>
+    <p class="mono" style="margin-top:0.3em;text-align:center;font-size:var(--tiny-size);color:var(--cyan);letter-spacing:0.1em;">
+      &gt; 一次跨域往返 ≈ 100ns · 与原始函数调用相比增加约 ~80ns · 在 Snappy 高频调用累积为 20.5%
+    </p>
+  </div>
+</section>
+
+<!-- ============== S16 · PASS PIPELINE ============== -->
+<section class="slide" id="s16">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>16</span> / 22</div>
+    <div class="tag-line">Pipeline · 七个 Pass 协作</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">Pass 流水线 · 7 阶段协作汇总</div>
+    <h2>从 IR 到加固二进制的<span class="glow-text">七步走</span></h2>
+    <table class="cyber" style="margin-top:0.3em;font-size:var(--tiny-size);">
+      <thead>
+        <tr><th>#</th><th>Pass</th><th>输入</th><th>处理</th><th>输出</th><th>对应机制</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="ok">P1</td><td><strong>UnsafetyMarker</strong></td><td>IR + rustc metadata</td><td>遍历 attrs，标记 unsafe/FFI/asm/inttoptr</td><td>tainted source set</td><td>机制 #7 (Layer 1)</td></tr>
+        <tr><td class="ok">P2</td><td><strong>SVFGBuilder</strong></td><td>LLVM IR</td><td>Andersen 指向分析 + 构建 SVFG</td><td>稀疏值流图</td><td>机制 #6 (SVF)</td></tr>
+        <tr><td class="ok">P3</td><td><strong>TaintPropagator</strong></td><td>SVFG + sources</td><td>BFS 前向传播 + 4 规则 + budget</td><td>tainted node set</td><td>机制 #8 (Layer 2)</td></tr>
+        <tr><td class="ok">P4</td><td><strong>AllocRewriter</strong></td><td>tainted set + IR</td><td>__rust_alloc → _safe / _unsafe</td><td>改写后 IR</td><td>机制 #4 (双堆)</td></tr>
+        <tr><td class="ok">P5</td><td><strong>StackSplitter</strong></td><td>tainted alloca + IR</td><td>alloca 展开为 unsafe SP gep</td><td>改写后 IR</td><td>机制 #5 (双栈)</td></tr>
+        <tr><td class="ok">P6</td><td><strong>GateInserter</strong></td><td>跨域调用点</td><td>插入 enter/exit 内联汇编</td><td>含 gate 的 IR</td><td>机制 #10/#11 (Gate)</td></tr>
+        <tr style="background:rgba(247,208,70,0.08);"><td class="warn">P7</td><td><strong>WRPKRUScanner</strong></td><td>final binary</td><td>扫描 0F 01 EF 字节模式 · 含跨指令边界</td><td>pass / fail</td><td>机制 #2 (WRPKRU)</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-3" style="margin-top:0.4em;gap:0.4em;">
+      <div class="card" style="padding:0.4em;"><div class="num">⚡ 编译时间</div><p style="font-size:var(--tiny-size);">P3 是瓶颈（指针分析爆炸）· P2 由 budget 控制 · 其他 Pass 增量小</p></div>
+      <div class="card" style="padding:0.4em;"><div class="num">🔒 协作不变量</div><p style="font-size:var(--tiny-size);">P3 完毕后 tainted set 不变；P4/P5 不引入新 tainted；P6 覆盖所有调用点</p></div>
+      <div class="card" style="padding:0.4em;background:rgba(110,240,160,0.05);"><div class="num" style="color:var(--green);">✅ 三层安全保证</div><p style="font-size:var(--tiny-size);">Soundness（无漏标）+ Gate Completeness（无遗漏）+ WRPKRU 不可伪造</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S17 · DESIGN TRADEOFFS ============== -->
+<section class="slide" id="s17">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>17</span> / 22</div>
+    <div class="tag-line">Design Tradeoffs · 四旋钮 + 失效场景</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">设计权衡 · 精度 ↔ 性能</div>
+    <h2>四个调节旋钮 + 四类失效场景</h2>
+    <table class="cyber" style="margin-top:0.3em;font-size:var(--small-size);">
+      <thead><tr><th>调节旋钮</th><th>拧紧（高精度）</th><th>拧松（低开销）</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Context 敏感深度</strong></td><td>k = ∞</td><td class="warn">k = 1</td><td>调用链精度</td></tr>
+        <tr><td><strong>Field 敏感性</strong></td><td>完全字段区分</td><td class="warn">字段坍缩</td><td>struct 精度</td></tr>
+        <tr><td><strong>Working budget</strong></td><td>无限</td><td class="warn">固定阈值</td><td>编译时间</td></tr>
+        <tr><td><strong>IntToPtr 处理</strong></td><td>全保守</td><td class="bad">选择性放行</td><td>指针算术覆盖</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2" style="margin-top:0.4em;gap:0.4em;">
+      <div class="card" style="padding:0.5em;border-color:rgba(255,94,219,0.3);">
+        <div class="num" style="color:var(--magenta);">🚫 四类失效场景</div>
+        <ul class="tech-list" style="font-size:var(--tiny-size);">
+          <li><strong>动态加载 .so</strong>：dlopen 编译期不可见 → 运行时保守标整库</li>
+          <li><strong>JIT 生成代码</strong>：V8 / Lua / Wasm 运行时新增代码 → 不支持</li>
+          <li><strong>rustc unsoundness</strong>：lifetime 扩张 bug → 攻击通过 safe 代码</li>
+          <li><strong>Transmute / 复杂指针算术</strong>：触发保守标记 → 性能塌陷</li>
+        </ul>
+      </div>
+      <div class="card" style="padding:0.5em;background:rgba(110,240,160,0.04);border-color:rgba(110,240,160,0.3);">
+        <div class="num" style="color:var(--green);">✅ 论文核心原则</div>
+        <p style="font-size:var(--small-size);"><strong style="color:var(--green);">Soundness over precision</strong>：宁可误报，不能漏报。漏报 = 安全漏洞。任何被 untrusted 触及的对象都进 untrusted 域；SVF 不确定时一律保守；这是后续工作批评 "过度保守" 的根源，但也是 TRust 安全保证的基石。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S18 · PERFORMANCE ============== -->
+<section class="slide" id="s18">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>18</span> / 22</div>
+    <div class="tag-line">Performance · 第三方独立测量</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">性能数据 · Friend-or-Foe (arXiv'23) 独立测量</div>
+    <h2>Snappy 几何平均开销 · <span class="glow-text">领先一个数量级</span></h2>
+    <table class="cyber" style="margin-top:0.3em;font-size:var(--small-size);">
+      <thead><tr><th>方案</th><th>压缩开销</th><th>解压开销</th><th>切换成本</th><th>机制</th></tr></thead>
+      <tbody>
+        <tr style="background:rgba(92,225,255,0.06);"><td><strong style="color:var(--cyan);">TRust</strong></td><td class="ok">20.5%</td><td class="ok">50.0%</td><td>~50ns</td><td>MPK + SVF + 双堆双栈</td></tr>
+        <tr><td>SDRaD-FFI</td><td class="warn">155.7%</td><td class="warn">370.8%</td><td>~177ns</td><td>MPK + Rewind</td></tr>
+        <tr><td>Sandcrust</td><td class="bad">1265.7%</td><td class="bad">6340.2%</td><td>~8671ns</td><td>fork + IPC</td></tr>
+        <tr><td>Baseline</td><td>0%</td><td>0%</td><td>~23ns</td><td>原版 Rust</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-3" style="margin-top:0.4em;gap:0.4em;">
+      <div class="card" style="text-align:center;padding:0.5em;background:rgba(110,240,160,0.05);"><div class="stat-num">7×</div><div class="stat-label">优于 SDRaD-FFI</div></div>
+      <div class="card" style="text-align:center;padding:0.5em;background:rgba(110,240,160,0.05);"><div class="stat-num">60×</div><div class="stat-label">优于 Sandcrust</div></div>
+      <div class="card" style="text-align:center;padding:0.5em;"><div class="stat-num">~50ns</div><div class="stat-label">单次切换接近极限</div></div>
+    </div>
+    <div class="grid-2" style="margin-top:0.4em;gap:0.4em;">
+      <div class="card" style="padding:0.5em;"><div class="num">📈 开销来源拆解</div><p style="font-size:var(--small-size);">① Gate 切换 ~50ns/次 · ② 双 mimalloc heap metadata · ③ 保守标记额外 gate · ④ SVF 仅编译时</p></div>
+      <div class="card" style="padding:0.5em;border-color:rgba(247,208,70,0.3);"><div class="num" style="color:var(--yellow);">⚠ 性能塌陷场景</div><p style="font-size:var(--small-size);">大量 transmute / 裸指针算术 → 几乎所有对象进 untrusted → gate 频率激增 → 开销可能放大数倍</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S19 · COMPARISON ============== -->
+<section class="slide" id="s19">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>19</span> / 22</div>
+    <div class="tag-line">Comparison · 横向对比</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">同期 Rust 隔离方案 · 6 维度对比</div>
+    <h2>TRust vs 同期 Rust 隔离工作</h2>
+    <table class="cyber" style="margin-top:0.3em;font-size:var(--tiny-size);">
+      <thead><tr><th>方案 · 年</th><th>机制</th><th>保护范围</th><th>双向</th><th>故障恢复</th><th>跨 unsafe</th><th>自动化</th><th>压缩开销</th></tr></thead>
+      <tbody>
+        <tr><td>Sandcrust ('17)</td><td>进程+IPC</td><td>整库</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="bad">手工</td><td class="bad">1265%</td></tr>
+        <tr><td>XRust ('20)</td><td>SFI</td><td>仅堆</td><td class="bad">仅写</td><td class="bad">✗</td><td class="bad">✗</td><td class="ok">编译期</td><td class="warn">~7%</td></tr>
+        <tr><td>PKRU-Safe ('22)</td><td>MPK+profile</td><td>污点对象</td><td class="ok">✓</td><td class="bad">✗</td><td class="bad">✗</td><td class="warn">profile</td><td>—</td></tr>
+        <tr><td>Galeed ('22)</td><td>MPK+注解</td><td>FFI 数据</td><td class="ok">✓</td><td class="bad">✗</td><td class="bad">✗</td><td class="warn">半自动</td><td>—</td></tr>
+        <tr style="background:rgba(92,225,255,0.08);"><td><strong style="color:var(--cyan);">TRust ('23)</strong></td><td><strong>MPK+SVF</strong></td><td><strong>全内存</strong></td><td class="ok"><strong>✓</strong></td><td class="bad">✗</td><td class="bad">✗</td><td class="ok"><strong>全自动</strong></td><td class="ok"><strong>20.5%</strong></td></tr>
+        <tr><td>SDRaD-FFI ('23)</td><td>MPK+Rewind</td><td>整库</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="bad">手工 API</td><td class="warn">155%</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-3" style="margin-top:0.4em;gap:0.4em;">
+      <div class="card" style="padding:0.5em;background:rgba(92,225,255,0.05);"><div class="num" style="color:var(--cyan);">✓ TRust 领先</div><p style="font-size:var(--small-size);">全自动 + 全覆盖 + 双向 + 性能最优 · "MPK 系自动化"分支的成熟形态</p></div>
+      <div class="card" style="padding:0.5em;background:rgba(255,94,219,0.05);"><div class="num" style="color:var(--magenta);">✗ TRust 短板</div><p style="font-size:var(--small-size);">无故障恢复 · 不能跨 unsafe 隔离 · 这是范式短板而非实现缺陷</p></div>
+      <div class="card" style="padding:0.5em;background:rgba(247,208,70,0.05);"><div class="num" style="color:var(--yellow);">📋 选型决策</div><p style="font-size:var(--small-size);">需故障恢复 → SDRaD/Sandcrust · 已有 profile → PKRU-Safe · 仅 FFI → Galeed · <strong>其他 → TRust</strong></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S20 · CRITIQUE ============== -->
+<section class="slide" id="s20">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>20</span> / 22</div>
+    <div class="tag-line">Critique · 三大根本局限</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">批判性评价 · 来自 2024–2025 后续工作</div>
+    <h2>范式局限的<span class="glow-text">三大维度</span></h2>
+    <div class="grid-3" style="margin-top:0.3em;gap:0.4em;">
+      <div class="card" style="border-color:rgba(255,94,219,0.3);padding:0.5em;">
+        <div class="num" style="color:var(--magenta);">CRITIQUE 01 · SandCell '25</div>
+        <h4 style="font-size:var(--body-size);">边界刚性</h4>
+        <ul class="tech-list" style="margin-top:0.2em;font-size:var(--tiny-size);">
+          <li>safe/unsafe 二分不够灵活</li>
+          <li>无法把两个独立 unsafe 库互相隔离</li>
+          <li>一个 FFI 被攻破 → 全部 unsafe 数据暴露</li>
+          <li>不支持执行实例隔离（per-request sandbox）</li>
+          <li>并发请求共享同一 untrusted 运行时</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(247,208,70,0.3);padding:0.5em;">
+        <div class="num" style="color:var(--yellow);">CRITIQUE 02 · SandCell '25</div>
+        <h4 style="font-size:var(--body-size);">TCB 庞大</h4>
+        <ul class="tech-list" style="margin-top:0.2em;font-size:var(--tiny-size);">
+          <li>整个 std + rustc 进 TCB</li>
+          <li>rustc soundness bug 可绕过</li>
+          <li>std 内 unsafe 漏洞不受保护</li>
+          <li>TCB ≈ 数百万行代码</li>
+          <li>与"最小 TCB 原则"相悖</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(92,225,255,0.3);padding:0.5em;">
+        <div class="num">CRITIQUE 03 · Friend-or-Foe</div>
+        <h4 style="font-size:var(--body-size);">无故障恢复</h4>
+        <ul class="tech-list" style="margin-top:0.2em;font-size:var(--tiny-size);">
+          <li>违规即崩溃</li>
+          <li>缺少 SDRaD 的 rewind 能力</li>
+          <li>长服务不友好</li>
+          <li>单次违规 = 整服务下线</li>
+          <li>与云原生韧性需求不匹配</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:0.4em;gap:0.4em;">
+      <div class="card" style="padding:0.5em;background:rgba(255,94,219,0.04);"><div class="num" style="color:var(--magenta);">📛 未公开薄弱点</div><p style="font-size:var(--small-size);">SVF 不处指针算术 → 过度保守 · 工具链改造大（rustc fork）· 多线程模型不清晰 · 精度数据未公开 · LLVM 14 强耦合</p></div>
+      <div class="card" style="padding:0.5em;background:rgba(247,208,70,0.04);"><div class="num" style="color:var(--yellow);">📛 SafeFFI '25 范式批评</div><p style="font-size:var(--small-size);">"事后遏制"vs"事前防御"——TRust 不阻止漏洞产生，仅阻止扩散；调试时仍需面对原始漏洞</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S21 · CONCLUSION ============== -->
+<section class="slide" id="s21">
+  <div class="hero-glow" style="opacity:0.4;"></div>
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>21</span> / 22</div>
+    <div class="tag-line">Conclusion · 范式定位</div>
+  </div>
+  <div class="slide-content reveal-stagger">
+    <div class="eyebrow mono">结论 · 范式定位</div>
+    <h2 style="text-align:center;line-height:1.25;">TRust 没有补好 Rust 的<span class="glow-text">安全裂缝</span></h2>
+    <p style="text-align:center;font-size:var(--body-size);color:var(--text-dim);">— 它从未声称要补好 —</p>
+    <div class="card" style="margin-top:0.5em;padding:0.6em;background:rgba(92,225,255,0.05);">
+      <p style="font-size:var(--body-size);color:var(--text);line-height:1.6;text-align:center;">
+        但它给我们提供了一个<strong style="color:var(--cyan);">清晰的工程框架</strong>：理解这条裂缝有多大 · 用什么工具去缓解 · 缓解的代价是什么 · 还有哪些缝隙留给未来。
+      </p>
+    </div>
+    <div class="grid-3" style="margin-top:0.5em;gap:0.4em;">
+      <div class="card" style="padding:0.5em;">
+        <div class="num">必读基线</div>
+        <p style="font-size:var(--small-size);">12 个机制细节集大成 · MPK + SVF + 双堆双栈 + Gate · 工程完整度最高</p>
+      </div>
+      <div class="card" style="padding:0.5em;">
+        <div class="num">必须超越的局部最优</div>
+        <p style="font-size:var(--small-size);">"safe/unsafe 二分 + MPK"范式的极值点 · 突破来自跳出此范式</p>
+      </div>
+      <div class="card" style="padding:0.5em;background:rgba(110,240,160,0.05);border-color:rgba(110,240,160,0.3);">
+        <div class="num" style="color:var(--green);">值得致敬</div>
+        <p style="font-size:var(--small-size);">明确的威胁模型 · 完整的实现 · 诚实的局限承认 · 优秀的系统安全研究范式</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:0.4em;padding:0.5em;">
+      <div class="num">🔮 下一代研究的 5 条路径</div>
+      <p style="font-size:var(--small-size);"><strong style="color:var(--cyan);">① 跨 ISA 重做</strong>（ARM MTE/CHERI Morello）· <strong style="color:var(--cyan);">② 边界自动派生</strong>（用 RustBelt 形式化结果）· <strong style="color:var(--magenta);">③ 故障恢复集成</strong>（融合 SDRaD rewind）· <strong style="color:var(--magenta);">④ 多沙箱模型</strong>（突破 16 域上限）· <strong style="color:var(--yellow);">⑤ 隔离 + 净化融合</strong>（边界净化 + 后端隔离）</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== S22 · END ============== -->
+<section class="slide" id="s22">
+  <div class="hero-glow"></div>
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>读书报告 · TRust · 机制深析</div>
+    <div class="page-num"><span>22</span> / 22</div>
+    <div class="tag-line">End · 谢谢</div>
+  </div>
+  <div class="slide-content reveal" style="align-items:center;text-align:center;justify-content:center;">
+    <div class="eyebrow mono" style="justify-content:center;">END · QUESTIONS</div>
+    <h1 class="glow-text" style="font-size:clamp(2.5rem, 9vw, 7rem);margin:0.3em 0;">谢谢</h1>
+    <p style="font-size:var(--h3-size);color:var(--text);max-width:65ch;margin-top:0.3em;">
+      欢迎对 12 个机制细节、SVF Pass 设计、Gate 汇编序列、性能数据、批判性观点提问与讨论
+    </p>
+    <div style="margin-top:1.5em;display:flex;gap:0.6em;flex-wrap:wrap;justify-content:center;">
+      <span class="badge">📄 USENIX Sec'23 PDF</span>
+      <span class="badge magenta">🔗 cssl-unist/trust-sec23</span>
+      <span class="badge yellow">📚 14 篇参考文献</span>
+      <span class="badge green">🐳 docker pull kayondo/trust</span>
+    </div>
+    <p class="mono" style="margin-top:2em;font-size:var(--tiny-size);color:var(--cyan-dim);letter-spacing:0.1em;">
+      // Press R to restart · ← → to navigate · Home/End to jump
+    </p>
+  </div>
+</section>
+
+</div><!-- /.deck -->
+
+<div class="nav-controls">
+  <button class="nav-btn" id="prevBtn">← PREV</button>
+  <button class="nav-btn" id="nextBtn">NEXT →</button>
+</div>
+
+<script>
+class Deck {
+  constructor() {
+    this.deck = document.getElementById('deck');
+    this.slides = Array.from(document.querySelectorAll('.slide'));
+    this.bar = document.getElementById('progressBar');
+    this.current = 0;
+    this.locked = false;
+    this.init();
+  }
+
+  init() {
+    this.activate(0);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented) return;
+      const target = e.target instanceof Element ? e.target : null;
+      if (target?.closest('input, textarea, select')) return;
+      if (target?.closest('button, [role="button"], a, summary') && (e.key === ' ' || e.key === 'Enter')) return;
+      if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); this.next(); }
+      else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); this.prev(); }
+      else if (e.key === 'Home') { e.preventDefault(); this.goto(0); }
+      else if (e.key === 'End') { e.preventDefault(); this.goto(this.slides.length - 1); }
+      else if (e.key.toLowerCase() === 'r') { e.preventDefault(); this.goto(0); }
+    });
+
+    let touchY = null;
+    document.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      if (touchY === null) return;
+      const dy = e.changedTouches[0].clientY - touchY;
+      if (Math.abs(dy) > 50) { if (dy < 0) this.next(); else this.prev(); }
+      touchY = null;
+    });
+
+    let wheelAccum = 0; let wheelTimer = null;
+    document.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (this.locked) return;
+      wheelAccum += e.deltaY;
+      if (Math.abs(wheelAccum) > 50) {
+        if (wheelAccum > 0) this.next(); else this.prev();
+        wheelAccum = 0;
+      }
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => { wheelAccum = 0; }, 200);
+    }, { passive: false });
+
+    document.getElementById('nextBtn').addEventListener('click', () => this.next());
+    document.getElementById('prevBtn').addEventListener('click', () => this.prev());
+
+    window.addEventListener('resize', () => this.applyTransform(false));
+    this.updateProgress();
+  }
+
+  applyTransform(animate = true) {
+    const offset = this.current * window.innerHeight;
+    if (!animate) {
+      this.deck.style.transition = 'none';
+      requestAnimationFrame(() => {
+        this.deck.style.transform = `translateY(-${offset}px)`;
+        requestAnimationFrame(() => { this.deck.style.transition = ''; });
+      });
+    } else {
+      this.deck.style.transform = `translateY(-${offset}px)`;
+    }
+  }
+
+  activate(i) {
+    this.slides.forEach((s, idx) => {
+      s.classList.toggle('visible', idx === i);
+      const reveals = s.querySelectorAll('.reveal, .reveal-stagger');
+      if (idx === i) reveals.forEach(el => el.classList.add('visible'));
+      else reveals.forEach(el => el.classList.remove('visible'));
+    });
+    document.dispatchEvent(new CustomEvent('deck:slidechange', { detail: { index: i, slide: this.slides[i] } }));
+  }
+
+  goto(i) {
+    if (this.locked) return;
+    i = Math.max(0, Math.min(this.slides.length - 1, i));
+    if (i === this.current) return;
+    this.locked = true;
+    this.current = i;
+    this.applyTransform(true);
+    this.activate(i);
+    this.updateProgress();
+    setTimeout(() => { this.locked = false; }, 750);
+  }
+
+  next() { this.goto(this.current + 1); }
+  prev() { this.goto(this.current - 1); }
+
+  updateProgress() {
+    const pct = ((this.current + 1) / this.slides.length) * 100;
+    this.bar.style.width = pct + '%';
+  }
+}
+
+class CompilerPipeline {
+  constructor(slide) {
+    this.slide = slide;
+    this.stageCount = 7;
+    this.currentStage = 1;
+    this.intervalMs = 2000;
+    this.progressStart = 20;
+    this.progressLength = 710;
+    this.progressTargets = [70, 180, 290, 400, 510, 620, 730];
+    this.timer = null;
+    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.init();
+  }
+
+  init() {
+    if (!this.slide) return;
+    this.stageEls = Array.from(this.slide.querySelectorAll('.compile-stage'));
+    this.passEls = Array.from(this.slide.querySelectorAll('.pipeline-pass'));
+    this.progressLine = this.slide.querySelector('.pipeline-progress');
+    this.progressNodeEls = Array.from(this.slide.querySelectorAll('.pipeline-progress-node'));
+    this.clickEls = Array.from(this.slide.querySelectorAll('[data-stage]'));
+    this.keyEls = [...this.passEls, ...this.progressNodeEls];
+
+    this.clickEls.forEach((el) => {
+      const jump = () => this.jumpTo(Number(el.dataset.stage));
+      el.addEventListener('click', jump);
+    });
+
+    this.keyEls.forEach((el) => {
+      const jump = () => this.jumpTo(Number(el.dataset.stage));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          jump();
+        }
+      });
+    });
+
+    document.addEventListener('deck:slidechange', (e) => {
+      this.setRunning(e.detail.slide === this.slide);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.stop();
+      else if (this.isVisible()) this.start();
+    });
+
+    this.render(this.currentStage);
+    this.setRunning(this.isVisible());
+  }
+
+  isVisible() {
+    return this.slide.querySelector('.reveal-stagger')?.classList.contains('visible');
+  }
+
+  setRunning(shouldRun) {
+    this.passEls.forEach((el) => {
+      el.setAttribute('tabindex', shouldRun ? '0' : '-1');
+      if (!shouldRun && document.activeElement === el) el.blur();
+    });
+    this.progressNodeEls.forEach((el) => {
+      el.setAttribute('tabindex', shouldRun ? '0' : '-1');
+      if (!shouldRun && document.activeElement === el) el.blur();
+    });
+    if (shouldRun) {
+      this.render(this.currentStage);
+      this.start();
+    } else {
+      this.stop();
+    }
+  }
+
+  start() {
+    if (this.reducedMotion || this.timer) return;
+    this.timer = window.setInterval(() => {
+      this.render(this.currentStage === this.stageCount ? 1 : this.currentStage + 1);
+    }, this.intervalMs);
+  }
+
+  stop() {
+    if (!this.timer) return;
+    window.clearInterval(this.timer);
+    this.timer = null;
+  }
+
+  restart() {
+    this.stop();
+    this.start();
+  }
+
+  jumpTo(stage) {
+    this.render(stage);
+    if (this.isVisible()) this.restart();
+  }
+
+  render(stage) {
+    this.currentStage = Math.max(1, Math.min(this.stageCount, stage));
+
+    this.stageEls.forEach((el, idx) => {
+      el.classList.toggle('is-visible', idx + 1 === this.currentStage);
+    });
+
+    this.passEls.forEach((el) => {
+      const stageIndex = Number(el.dataset.stage);
+      el.classList.toggle('is-active', stageIndex === this.currentStage);
+      el.classList.toggle('is-done', stageIndex < this.currentStage);
+      el.setAttribute('aria-pressed', stageIndex === this.currentStage ? 'true' : 'false');
+      if (stageIndex === this.currentStage) el.setAttribute('aria-current', 'step');
+      else el.removeAttribute('aria-current');
+    });
+
+    this.progressNodeEls.forEach((el) => {
+      const stageIndex = Number(el.dataset.stage);
+      el.classList.toggle('is-active', stageIndex === this.currentStage);
+      el.classList.toggle('is-done', stageIndex < this.currentStage);
+      el.setAttribute('aria-pressed', stageIndex === this.currentStage ? 'true' : 'false');
+      if (stageIndex === this.currentStage) el.setAttribute('aria-current', 'step');
+      else el.removeAttribute('aria-current');
+    });
+
+    if (this.progressLine) {
+      const targetX = this.progressTargets[this.currentStage - 1];
+      const filled = Math.max(0, targetX - this.progressStart);
+      this.progressLine.style.strokeDashoffset = String(this.progressLength - filled);
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  new Deck();
+  new CompilerPipeline(document.getElementById('s3'));
+});
+</script>
+
+</body>
+</html>
