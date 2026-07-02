@@ -247,6 +247,261 @@
   .theme-grid button.t-clash-purple { background: linear-gradient(135deg, #4c2f8f 50%, #17a398 50%); }
   .theme-grid button.t-clash-wine   { background: linear-gradient(135deg, #7a1f3d 50%, #2a6fb0 50%); }
 
+  /* ===== 浮动操作按钮（仅屏幕显示） ===== */
+  .fab-stack {
+    position: fixed;
+    right: 20px; bottom: 24px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .fab {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: var(--primary);
+    color: #fff;
+    font-size: 16px;
+    line-height: 1;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.9;
+    transition: transform .18s, opacity .18s, background .2s;
+  }
+  .fab:hover { opacity: 1; transform: translateY(-3px); background: var(--accent); }
+  /* 回到顶部：滚动后才显示 */
+  .fab.top { opacity: 0; pointer-events: none; }
+  .fab.top.show { opacity: 0.9; pointer-events: auto; }
+
+  /* 阅读进度条 */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    z-index: 200;
+    transition: width .1s linear;
+  }
+
+  /* 主题面板：随机配色按钮 */
+  .theme-random {
+    grid-column: span 3;
+    height: 30px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-top: 2px;
+    transition: transform .15s, background .2s;
+  }
+  .theme-random:hover { transform: translateY(-2px); background: var(--accent); }
+
+  /* 可折叠分类 */
+  .category-title { cursor: pointer; user-select: none; }
+  .category-title .caret {
+    margin-left: auto;
+    font-size: 10px;
+    transition: transform .25s;
+    color: var(--muted);
+  }
+  .category.collapsed .caret { transform: rotate(-90deg); }
+  .category .cat-body {
+    overflow: hidden;
+    transition: max-height .35s ease, opacity .25s ease;
+    max-height: 2000px;
+    opacity: 1;
+  }
+  .category.collapsed .cat-body { max-height: 0; opacity: 0; }
+
+  /* 可复制联系方式反馈 */
+  .header .contacts span.copied::after {
+    content: "已复制";
+    margin-left: 6px;
+    font-size: 10px;
+    color: var(--gold);
+  }
+
+  /* ===== 动态效果（仅屏幕） ===== */
+  /* 入场：滚动进入视口时渐入上浮 */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* 头部渐变条流动动画（见 .header::after） */
+  @keyframes flowbar {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* 头像/姓名区悬停微动 */
+  .header .name { transition: letter-spacing .3s, text-shadow .3s; }
+  .header .name:hover { letter-spacing: 7px; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+
+  /* 联系方式悬停 */
+  .header .contacts span { transition: transform .2s, color .2s; cursor: default; }
+  .header .contacts span:hover { transform: translateY(-2px); color: #fff; }
+
+  /* 章节竖条悬停脉动 */
+  .section-title:hover .bar { animation: pulse 1s ease infinite; }
+  @keyframes pulse {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.35); }
+  }
+
+  /* 分类菱形悬停旋转 */
+  .category-title:hover::before { transform: rotate(135deg) scale(1.2); }
+  .category-title::before { transition: transform .3s; }
+
+  /* 课程胶囊 / 技能标签悬停上浮 */
+  .course, .skill-tags .tag { transition: transform .18s, box-shadow .18s; }
+  .course:hover, .skill-tags .tag:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+  }
+
+  /* 教育时间胶囊悬停 */
+  .edu-time { transition: transform .18s; }
+  .edu-item:hover .edu-time { transform: scale(1.06); }
+
+  /* ===== 大胆动效 ===== */
+
+  /* 全站配色切换平滑过渡 */
+  .header, .summary, .section-title .bar, .category-title::before,
+  .project::before, .project-link, .project-award, .edu-time,
+  .course, .course .score, .skill-tags .tag, .fab, .theme-toggle {
+    transition: background .4s ease, color .4s ease, border-color .4s ease,
+                transform .18s ease, box-shadow .18s ease;
+  }
+
+  /* 头部动态渐变背景动画（见 .header） */
+  @keyframes heroShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* 头部漂浮光斑 */
+  .header::before {
+    content: "";
+    position: absolute;
+    top: -60%; left: -10%;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--gold) 55%, transparent), transparent 70%);
+    border-radius: 50%;
+    filter: blur(8px);
+    opacity: .5;
+    animation: floatBlob 12s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes floatBlob {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(60vw, 40px) scale(1.3); }
+    66% { transform: translate(30vw, -20px) scale(.9); }
+  }
+
+  /* 姓名渐变流光文字 */
+  .header .name {
+    background: linear-gradient(90deg, #fff, var(--gold), #fff);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: nameSheen 6s linear infinite;
+    position: relative;
+  }
+  @keyframes nameSheen {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* 项目圆点脉冲光环（以圆点中心对齐） */
+  .project::after {
+    content: "";
+    position: absolute;
+    left: -1px; top: 12px;
+    width: 10px; height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    box-sizing: border-box;
+    transform-origin: center center;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .project:hover::after { animation: ring 1s ease-out infinite; }
+  @keyframes ring {
+    0% { transform: scale(.7); opacity: .7; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+
+  /* section 入场后竖条从上刷下 */
+  .reveal .section-title .bar { transform-origin: top; }
+  .reveal.in .section-title .bar { animation: barDrop .5s ease; }
+  @keyframes barDrop {
+    0% { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+  }
+
+  /* 项目卡片错位入场 */
+  .reveal.in .project {
+    animation: slideIn .5s ease backwards;
+  }
+  .reveal.in .project:nth-child(2) { animation-delay: .05s; }
+  .reveal.in .project:nth-child(3) { animation-delay: .1s; }
+  .reveal.in .project:nth-child(4) { animation-delay: .15s; }
+  .reveal.in .project:nth-child(5) { animation-delay: .2s; }
+  @keyframes slideIn {
+    0% { opacity: 0; transform: translateX(-14px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+
+  /* 课程/技能标签逐个弹入 */
+  .reveal.in .course, .reveal.in .skill-tags .tag {
+    animation: popIn .4s ease backwards;
+  }
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(.6); }
+    70% { transform: scale(1.08); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* 分数徽章脉冲（高分课程） */
+  .course.gold .score { animation: scorePulse 2.2s ease-in-out infinite; }
+  @keyframes scorePulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 60%, transparent); }
+    50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 0%, transparent); }
+  }
+
+  /* 链接箭头悬停位移 */
+  .project-link { display: inline-block; }
+  .project-link:hover { transform: translateY(-1px) scale(1.05); }
+
+  /* 回到顶部按钮呼吸光环 */
+  .fab.top.show { animation: fabBreath 2.6s ease-in-out infinite; }
+  @keyframes fabBreath {
+    0%, 100% { box-shadow: 0 3px 14px rgba(0,0,0,0.22), 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent); }
+    50% { box-shadow: 0 3px 14px rgba(0,0,0,0.22), 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+
+  /* 尊重减少动效偏好 */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .header::after { animation: none; }
+    * { animation: none !important; }
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
@@ -269,10 +524,13 @@
 
   /* ===== Header ===== */
   .header {
-    background: linear-gradient(120deg, var(--ink) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(120deg, var(--ink), var(--primary-dark), var(--primary), var(--ink));
+    background-size: 300% 300%;
+    animation: heroShift 14s ease infinite;
     color: #fff;
     padding: 30px 44px 24px;
     position: relative;
+    overflow: hidden;
   }
 
   .header::after {
@@ -280,7 +538,9 @@
     position: absolute;
     left: 0; right: 0; bottom: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--accent) 0%, var(--gold) 100%);
+    background: linear-gradient(90deg, var(--accent), var(--gold), var(--accent));
+    background-size: 200% 100%;
+    animation: flowbar 5s linear infinite;
   }
 
   .header .top-row {
@@ -288,6 +548,8 @@
     align-items: baseline;
     gap: 16px;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
   }
 
   .header .name {
@@ -306,6 +568,8 @@
 
   .header .contacts {
     margin-top: 12px;
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-wrap: wrap;
     gap: 8px 24px;
@@ -409,12 +673,20 @@
 
   /* ===== Project ===== */
   .project {
+    position: relative;
     margin-bottom: 11px;
     padding: 3px 0 3px 15px;
     border-left: 2px solid var(--line);
-    transition: border-color .2s;
+    border-radius: 0 5px 5px 0;
+    transition: border-color .2s, background .2s, transform .2s;
   }
-  .project:hover { border-left-color: var(--accent); }
+  .project:hover {
+    border-left-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 5%, #fff);
+    transform: translateX(2px);
+  }
+  .project::before { transition: transform .2s, background .2s; }
+  .project:hover::before { transform: scale(1.35); }
 
   .project-head {
     display: flex;
@@ -426,15 +698,15 @@
   }
 
   .project-name { font-weight: 700; font-size: 13px; color: var(--ink); }
-  .project-name::before {
+  /* 圆点绝对定位，精确对齐左侧竖线中心 */
+  .project::before {
     content: "";
-    display: inline-block;
-    width: 7px; height: 7px;
+    position: absolute;
+    left: -5px;
+    top: 8px;
+    width: 8px; height: 8px;
     border-radius: 50%;
     background: var(--accent);
-    margin-right: 7px;
-    vertical-align: middle;
-    margin-left: -17px;
     box-shadow: 0 0 0 2px #fff;
   }
 
@@ -549,7 +821,20 @@
   }
   @media print {
     html, body { background: #fff; }
-    .theme-switch, .theme-panel { display: none !important; }
+    .theme-switch, .theme-panel, .fab-stack, .progress-bar { display: none !important; }
+    .reveal { opacity: 1 !important; transform: none !important; }
+    /* 打印时展开所有折叠分类 */
+    .category.collapsed .cat-body { max-height: none !important; opacity: 1 !important; }
+    .category-title .caret { display: none !important; }
+    /* 打印时禁用动画，姓名恢复纯白 */
+    .header, .header::before, .header::after, .header .name,
+    .project::after, .course.gold .score { animation: none !important; }
+    .header::before { display: none !important; }
+    .header .name {
+      background: none !important;
+      -webkit-text-fill-color: #fff !important;
+      color: #fff !important;
+    }
     body { font-size: 10.5px; line-height: 1.5; }
     .page {
       margin: 0 auto;
@@ -579,8 +864,8 @@
     .project li { margin-bottom: 1px; line-height: 1.45; orphans: 2; widows: 2; }
     .project-name { break-after: avoid; }
 
-    /* 跨页时圆点白色描边会盖住绿点，打印时改为实心绿点 */
-    .project-name::before {
+    /* 跨页时圆点白色描边会盖住圆点，打印时改为实心色点 */
+    .project::before {
       box-shadow: none;
       background: var(--accent) !important;
     }
@@ -588,7 +873,7 @@
     /* 保留配色 */
     .header, .summary, .edu-time, .project-award, .project-link,
     .skill-tags .tag, .course, .course .score, .category-title::before,
-    .section-title .bar, .project-name::before {
+    .section-title .bar, .project::before {
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
     a { color: inherit; }
@@ -604,6 +889,8 @@
 </style>
 </head>
 <body>
+
+<div class="progress-bar" id="progressBar"></div>
 
 <div class="theme-panel" id="themePanel">
   <button class="theme-toggle" onclick="toggleThemePanel()" title="配色设置" aria-label="配色设置">
@@ -628,6 +915,7 @@
       <button class="t-clash-green"  onclick="setTheme('clash-green')"  title="墨绿×珊瑚"><span>墨绿撞</span></button>
       <button class="t-clash-purple" onclick="setTheme('clash-purple')" title="深紫×青"><span>紫青撞</span></button>
       <button class="t-clash-wine"   onclick="setTheme('clash-wine')"   title="酒红×靛蓝"><span>酒蓝撞</span></button>
+      <button class="theme-random" onclick="randomTheme()">🎲 随机配色</button>
     </div>
   </div>
 </div>
@@ -650,12 +938,12 @@
   <!-- Body -->
   <main class="body">
 
-    <div class="summary">
+    <div class="summary reveal">
       中国科学院大学软件研究所硕士在读。专注计算机系统底层与安全攻防，在 CPU 微架构设计、缓冲区溢出漏洞利用、数据竞争检测、静态代码分析等方向有深入的项目实践，同时具备编译器构造、GPU 并行计算及深度学习的工程经验。
     </div>
 
     <!-- 意向方向 -->
-    <div class="section">
+    <div class="section reveal">
       <div class="section-title"><span class="bar"></span>意向方向</div>
       <div class="project" style="border-left-color: var(--accent); margin-bottom: 0;">
         <div class="project-head">
@@ -671,7 +959,7 @@
     </div>
 
     <!-- 教育经历 -->
-    <div class="section">
+    <div class="section reveal">
       <div class="section-title"><span class="bar"></span>教育经历</div>
       <div class="edu-item">
         <div><span class="edu-main">中国科学院大学</span><span class="edu-sub">软件研究所 · 软件工程 · 硕士</span></div>
@@ -684,7 +972,7 @@
     </div>
 
     <!-- 主修课程 -->
-    <div class="section">
+    <div class="section reveal">
       <div class="section-title"><span class="bar"></span>主修课程</div>
       <div class="course-grid">
         <span class="course gold">GPU 架构与编程<span class="score">97</span></span>
@@ -700,7 +988,7 @@
     </div>
 
     <!-- 项目经历 -->
-    <div class="section">
+    <div class="section reveal">
       <div class="section-title"><span class="bar"></span>项目经历</div>
 
       <!-- 系统与安全 -->
@@ -933,6 +1221,10 @@
   </main>
 </div>
 
+<div class="fab-stack">
+  <button class="fab top" id="fabTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部" aria-label="回到顶部">↑</button>
+</div>
+
 <script>
   function toggleThemePanel() {
     document.getElementById('themePanel').classList.toggle('open');
@@ -942,6 +1234,12 @@
     else { document.documentElement.removeAttribute('data-theme'); }
     try { localStorage.setItem('resumeTheme', t); } catch (e) {}
     document.getElementById('themePanel').classList.remove('open');
+  }
+  function randomTheme() {
+    var themes = ['', 'teal', 'cyan', 'forest', 'indigo', 'purple', 'wine', 'brown', 'mono', 'clash-navy', 'clash-green', 'clash-purple', 'clash-wine'];
+    var current = document.documentElement.getAttribute('data-theme') || '';
+    var pool = themes.filter(function (t) { return t !== current; });
+    setTheme(pool[Math.floor(Math.random() * pool.length)]);
   }
   try {
     var saved = localStorage.getItem('resumeTheme');
@@ -954,6 +1252,97 @@
       panel.classList.remove('open');
     }
   });
+  // 阅读进度条
+  var progressBar = document.getElementById('progressBar');
+  function updateProgress() {
+    var doc = document.documentElement;
+    var max = Math.max(1, doc.scrollHeight - window.innerHeight);
+    var pct = Math.min(100, Math.max(0, window.scrollY / max * 100));
+    progressBar.style.width = pct + '%';
+  }
+  updateProgress();
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress);
+  // 滚动超过一屏时显示"回到顶部"
+  var fabTop = document.getElementById('fabTop');
+  window.addEventListener('scroll', function () {
+    if (window.scrollY > 300) fabTop.classList.add('show');
+    else fabTop.classList.remove('show');
+  }, { passive: true });
+  // 分类标题点击折叠 / 展开
+  document.querySelectorAll('.category').forEach(function (cat) {
+    var title = cat.querySelector('.category-title');
+    if (!title) return;
+    var body = document.createElement('div');
+    body.className = 'cat-body';
+    while (title.nextSibling) body.appendChild(title.nextSibling);
+    cat.appendChild(body);
+    var caret = document.createElement('span');
+    caret.className = 'caret';
+    caret.textContent = '▾';
+    title.appendChild(caret);
+    title.setAttribute('tabindex', '0');
+    title.setAttribute('role', 'button');
+    title.setAttribute('aria-expanded', 'true');
+    function toggleCategory() {
+      var collapsed = cat.classList.toggle('collapsed');
+      title.setAttribute('aria-expanded', String(!collapsed));
+    }
+    title.addEventListener('click', toggleCategory);
+    title.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleCategory();
+      }
+    });
+  });
+  // 点击联系方式复制
+  document.querySelectorAll('.header .contacts > span').forEach(function (item) {
+    item.title = '点击复制';
+    item.style.cursor = 'copy';
+    item.addEventListener('click', function () {
+      var text = item.textContent.replace(/^[☎✉⌘]\s*/, '').trim();
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(text).then(function () {
+        item.classList.add('copied');
+        setTimeout(function () { item.classList.remove('copied'); }, 1000);
+      });
+    });
+  });
+  // 滚动进入视口时渐入
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+  // 分数数字滚动计数（进入视口触发一次）
+  (function () {
+    var scores = document.querySelectorAll('.course .score');
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var el = e.target, target = parseInt(el.textContent, 10);
+        io.unobserve(el);
+        if (isNaN(target)) return;
+        var cur = 0, step = Math.max(1, Math.round(target / 28));
+        var timer = setInterval(function () {
+          cur += step;
+          if (cur >= target) { cur = target; clearInterval(timer); }
+          el.textContent = cur;
+        }, 22);
+      });
+    }, { threshold: 0.5 });
+    scores.forEach(function (s) { io.observe(s); });
+  })();
 </script>
 
 </body>
