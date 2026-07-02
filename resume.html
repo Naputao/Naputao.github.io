@@ -280,17 +280,88 @@
     line-height: 1.5;
   }
 
-  /* ===== Print ===== */
+  /* ===== Courses ===== */
+  .course-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .course {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: #3a434b;
+    background: #f5f7f9;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 2px 4px 2px 10px;
+    line-height: 1.6;
+  }
+  .course .score {
+    font-weight: 700;
+    color: #fff;
+    background: var(--muted);
+    border-radius: 4px;
+    padding: 0 6px;
+    font-size: 11px;
+    min-width: 22px;
+    text-align: center;
+  }
+  .course.top { border-color: #cbe6e2; background: var(--accent-soft); color: var(--primary-dark); }
+  .course.top .score { background: var(--accent); }
+  .course.gold { border-color: #f0dcae; background: #fdf6e8; color: #8a5a12; }
+  .course.gold .score { background: var(--gold); }
+
+  /* ===== Print (A4) ===== */
+  @page {
+    size: A4;
+    margin: 12mm 0;
+  }
   @media print {
-    body { background: #fff; font-size: 11.5px; }
-    .page { margin: 0; box-shadow: none; border-radius: 0; max-width: 100%; }
-    .header { padding: 22px 32px 18px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .body { padding: 18px 32px 24px; }
-    .project { break-inside: avoid; }
+    html, body { background: #fff; }
+    body { font-size: 10.5px; line-height: 1.5; }
+    .page {
+      margin: 0 auto;
+      box-shadow: none;
+      border-radius: 0;
+      width: 186mm;
+      max-width: 186mm;
+    }
+    .header { padding: 16px 18px 13px; }
+    .header .name { font-size: 24px; letter-spacing: 4px; }
+    .header .contacts { margin-top: 8px; }
+    .body { padding: 14px 18px 6px; }
+
+    .summary { padding: 9px 12px; margin-bottom: 14px; line-height: 1.6; }
+    .section { margin-bottom: 13px; }
+    .section-title { font-size: 13px; margin-bottom: 9px; break-after: avoid; }
+    .category { margin-bottom: 9px; }
+    .category-title { margin-bottom: 6px; break-after: avoid; }
+
+    /* 换页后顶部留出呼吸空间，避免内容贴边 */
+    .category { padding-top: 2px; }
+    .category:not(:first-child) { break-before: auto; }
+
+    /* 避免卡片/条目跨页断裂 */
+    .project, .edu-item, .skill-row, .course { break-inside: avoid; }
+    .project { margin-bottom: 8px; }
+    .project li { margin-bottom: 1px; line-height: 1.45; orphans: 2; widows: 2; }
+    .project-name { break-after: avoid; }
+
+    /* 跨页时圆点白色描边会盖住绿点，打印时改为实心绿点 */
+    .project-name::before {
+      box-shadow: none;
+      background: var(--accent) !important;
+    }
+
+    /* 保留配色 */
     .header, .summary, .edu-time, .project-award, .project-link,
-    .skill-tags .tag, .category-title::before {
+    .skill-tags .tag, .course, .course .score, .category-title::before,
+    .section-title .bar, .project-name::before {
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
+    a { color: inherit; }
   }
 
   @media screen and (max-width: 640px) {
@@ -310,7 +381,7 @@
   <header class="header">
     <div class="top-row">
       <div class="name">杨 帅</div>
-      <div class="role">编译器优化 · 程序分析</div>
+      <div class="role">意向方向 操作系统</div>
     </div>
     <div class="contacts">
       <span><span class="ico">☎</span>18256809531</span>
@@ -323,7 +394,23 @@
   <main class="body">
 
     <div class="summary">
-      中国科学院大学软件研究所硕士在读，研究方向为编译器优化与程序分析。具备扎实的计算机系统基础，在编译器构造、静态分析、CPU 微架构、漏洞攻防、GPU 并行计算及深度学习等领域均有项目实践。代码能力强，善于从底层原理出发解决复杂工程问题。
+      中国科学院大学软件研究所硕士在读。专注计算机系统底层与安全攻防，在 CPU 微架构设计、缓冲区溢出漏洞利用、数据竞争检测、静态代码分析等方向有深入的项目实践，同时具备编译器构造、GPU 并行计算及深度学习的工程经验。
+    </div>
+
+    <!-- 意向方向 -->
+    <div class="section">
+      <div class="section-title"><span class="bar"></span>意向方向</div>
+      <div class="project" style="border-left-color: var(--accent); margin-bottom: 0;">
+        <div class="project-head">
+          <span class="project-name">操作系统</span>
+        </div>
+        <div class="project-desc">希望从事操作系统安全相关的研发工作，聚焦内核安全、可信执行与系统防护。</div>
+        <ul>
+          <li>系统安全实践：在缓冲区溢出漏洞利用、Lockset 数据竞争检测、可信计算与体系结构安全等方向有项目与课程积累</li>
+          <li>内核与底层功底：操作系统高级教程 92 分，熟悉进程调度、内存管理、并发同步等机制，理解安全防护的实现基础</li>
+          <li>软硬件贯通视角：从零实现 MIPS 五级流水线 CPU，熟悉指令集、Cache、总线与微架构，具备从硬件到系统的安全分析能力</li>
+        </ul>
+      </div>
     </div>
 
     <!-- 教育经历 -->
@@ -339,9 +426,66 @@
       </div>
     </div>
 
+    <!-- 主修课程 -->
+    <div class="section">
+      <div class="section-title"><span class="bar"></span>主修课程</div>
+      <div class="course-grid">
+        <span class="course gold">GPU 架构与编程<span class="score">97</span></span>
+        <span class="course gold">计算机体系结构安全<span class="score">94</span></span>
+        <span class="course gold">操作系统高级教程<span class="score">92</span></span>
+        <span class="course top">可信计算<span class="score">87</span></span>
+        <span class="course top">嵌入式系统与安全<span class="score">86</span></span>
+        <span class="course top">计算机算法设计与分析<span class="score">83</span></span>
+        <span class="course top">软件与系统安全<span class="score">82</span></span>
+        <span class="course top">软件分析与测试<span class="score">81</span></span>
+        <span class="course">矩阵分析与应用<span class="score">70</span></span>
+      </div>
+    </div>
+
     <!-- 项目经历 -->
     <div class="section">
       <div class="section-title"><span class="bar"></span>项目经历</div>
+
+      <!-- 系统与安全 -->
+      <div class="category">
+        <div class="category-title">系统与安全</div>
+
+        <div class="project">
+          <div class="project-head">
+            <span class="project-name">硬件综合设计：基于 MIPS 的五级流水线 CPU</span>
+            <a class="project-link" href="https://github.com/Naputao/CQU-HardwareDesign-2024-MIPSCPU" target="_blank">GitHub &#8599;</a>
+          </div>
+          <ul>
+            <li>从零实现单周期 CPU → 五级流水线 → 加入数据前推解决数据冒险等优化</li>
+            <li>完善指令集支持 57 条 MIPS 指令，添加算术指令、分支跳转指令、取存内存指令</li>
+            <li>集成 Cache、AXI 总线接口、快速除法器模块</li>
+          </ul>
+        </div>
+
+        <div class="project">
+          <div class="project-head">
+            <span class="project-name">缓冲区溢出漏洞攻击：利用 War-FTPD 漏洞攻击 Windows XP</span>
+          </div>
+          <div class="project-desc">在实验环境中搭建 War-FTPD 服务，模拟真实漏洞场景。</div>
+          <ul>
+            <li>通过向 FTP 服务的 USER 命令发送超长请求，成功触发缓冲区溢出，验证超过 480 字节数据可覆盖栈内存</li>
+            <li>借助 Windows 调试工具（WinDbg）对进程进行动态分析，精确定位到返回地址被覆盖的位置，并确认栈顶寄存器指向可控数据区域</li>
+            <li>通过构造特征字符串计算偏移量，在程序模块中搜索"跳转栈顶"指令地址，实现对程序执行流的劫持</li>
+            <li>最终编写 Python 攻击脚本，规避特殊字符影响，完成漏洞利用验证</li>
+          </ul>
+        </div>
+
+        <div class="project">
+          <div class="project-head">
+            <span class="project-name">代码插桩：Lockset 算法数据竞争检测</span>
+          </div>
+          <ul>
+            <li>基于 LLVM IR 实现代码插桩工具，在每条 IR 指令前插入记录函数统计源码覆盖率，并通过 atexit 输出执行行号集合</li>
+            <li>对全局变量的 Load/Store 指令及 pthread_mutex 操作进行插桩，实现共享变量检测，构建线程—锁—变量关系模型</li>
+            <li>实现基于 Lockset 算法的数据竞争检测，在程序结束时自动分析潜在数据竞争变量</li>
+          </ul>
+        </div>
+      </div>
 
       <!-- 编译器与程序分析 -->
       <div class="category">
@@ -396,47 +540,6 @@
             <li>从 GitHub 收集经典 Triton 算子（triton-mlu tutorial、Liger、flash-linear-attention 等），验证 cnsanitizer 对 Triton 算子的兼容性</li>
             <li>基于 triton_initcheck 代码验证 cnsanitizer 在 Triton 层面 initcheck 问题检测的支持</li>
             <li>编写自动化测试脚本，实现跨版本 cnsanitizer 表现差异的自动对比验证</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- 系统与安全 -->
-      <div class="category">
-        <div class="category-title">系统与安全</div>
-
-        <div class="project">
-          <div class="project-head">
-            <span class="project-name">硬件综合设计：基于 MIPS 的五级流水线 CPU</span>
-            <a class="project-link" href="https://github.com/Naputao/CQU-HardwareDesign-2024-MIPSCPU" target="_blank">GitHub &#8599;</a>
-          </div>
-          <ul>
-            <li>从零实现单周期 CPU → 五级流水线 → 加入数据前推解决数据冒险等优化</li>
-            <li>完善指令集支持 57 条 MIPS 指令，添加算术指令、分支跳转指令、取存内存指令</li>
-            <li>集成 Cache、AXI 总线接口、快速除法器模块</li>
-          </ul>
-        </div>
-
-        <div class="project">
-          <div class="project-head">
-            <span class="project-name">缓冲区溢出漏洞攻击：利用 War-FTPD 漏洞攻击 Windows XP</span>
-          </div>
-          <div class="project-desc">在实验环境中搭建 War-FTPD 服务，模拟真实漏洞场景。</div>
-          <ul>
-            <li>通过向 FTP 服务的 USER 命令发送超长请求，成功触发缓冲区溢出，验证超过 480 字节数据可覆盖栈内存</li>
-            <li>借助 Windows 调试工具（WinDbg）对进程进行动态分析，精确定位到返回地址被覆盖的位置，并确认栈顶寄存器指向可控数据区域</li>
-            <li>通过构造特征字符串计算偏移量，在程序模块中搜索"跳转栈顶"指令地址，实现对程序执行流的劫持</li>
-            <li>最终编写 Python 攻击脚本，规避特殊字符影响，完成漏洞利用验证</li>
-          </ul>
-        </div>
-
-        <div class="project">
-          <div class="project-head">
-            <span class="project-name">代码插桩：Lockset 算法数据竞争检测</span>
-          </div>
-          <ul>
-            <li>基于 LLVM IR 实现代码插桩工具，在每条 IR 指令前插入记录函数统计源码覆盖率，并通过 atexit 输出执行行号集合</li>
-            <li>对全局变量的 Load/Store 指令及 pthread_mutex 操作进行插桩，实现共享变量检测，构建线程—锁—变量关系模型</li>
-            <li>实现基于 Lockset 算法的数据竞争检测，在程序结束时自动分析潜在数据竞争变量</li>
           </ul>
         </div>
       </div>
@@ -536,7 +639,7 @@
     </div>
 
     <!-- 专业技能 -->
-    <div class="section">
+    <!-- <div class="section">
       <div class="section-title"><span class="bar"></span>专业技能</div>
       <div class="skills-grid">
         <div class="skill-row">
@@ -568,7 +671,7 @@
           <div class="skill-tags"><span class="tag">Git</span><span class="tag">Scapy</span><span class="tag">多线程编程</span><span class="tag">自动化测试</span></div>
         </div>
       </div>
-    </div>
+    </div> -->
 
   </main>
 </div>
