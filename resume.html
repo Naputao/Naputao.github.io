@@ -6,23 +6,252 @@
 <title>杨帅 - 个人简历</title>
 <style>
   :root {
-    --ink: #16302b;
-    --primary: #0f766e;
-    --primary-dark: #115e56;
-    --accent: #0d9488;
-    --accent-soft: #e6f4f2;
-    --gold: #b7791f;
+    /* 默认：商务蓝 × 橙（撞色） */
+    --ink: #17233d;
+    --primary: #1f4e8c;
+    --primary-dark: #1a3f72;
+    --accent: #2563a8;
+    --accent-soft: #e8eff8;
+    --gold: #e8862b;
     --text: #2b333a;
     --muted: #6b7480;
     --line: #e3e8ec;
     --bg: #eceff2;
   }
 
+  /* 墨黑灰 × 橙红（撞色） */
+  [data-theme="mono"] {
+    --ink: #1c1c1e;
+    --primary: #3a3a3c;
+    --primary-dark: #2c2c2e;
+    --accent: #4a4a4d;
+    --accent-soft: #eeeeef;
+    --gold: #e0533a;
+  }
+
+  /* 酒红 × 靛蓝（撞色） */
+  [data-theme="wine"] {
+    --ink: #3a1420;
+    --primary: #7d2740;
+    --primary-dark: #661f33;
+    --accent: #9a3350;
+    --accent-soft: #f6e9ec;
+    --gold: #2a6fb0;
+  }
+
+  /* 深紫 × 青柠（撞色） */
+  [data-theme="purple"] {
+    --ink: #241b3d;
+    --primary: #5b3aa8;
+    --primary-dark: #4a2f8c;
+    --accent: #6d4cc0;
+    --accent-soft: #efeafa;
+    --gold: #17a398;
+  }
+
+  /* 青绿 × 珊瑚红（撞色，原配色升级） */
+  [data-theme="teal"] {
+    --ink: #16302b;
+    --primary: #0f766e;
+    --primary-dark: #115e56;
+    --accent: #0d9488;
+    --accent-soft: #e6f4f2;
+    --gold: #e8553b;
+  }
+
+  /* 深青蓝 × 暖橙（撞色） */
+  [data-theme="cyan"] {
+    --ink: #0f2a33;
+    --primary: #0e7490;
+    --primary-dark: #0b5c73;
+    --accent: #0891b2;
+    --accent-soft: #e4f3f7;
+    --gold: #e8862b;
+  }
+
+  /* 森林绿 × 珊瑚红（撞色） */
+  [data-theme="forest"] {
+    --ink: #14291c;
+    --primary: #276749;
+    --primary-dark: #1f5138;
+    --accent: #2f855a;
+    --accent-soft: #e6f2ea;
+    --gold: #e8553b;
+  }
+
+  /* 暗夜靛蓝 × 琥珀橙（撞色） */
+  [data-theme="indigo"] {
+    --ink: #1a1f3d;
+    --primary: #3949ab;
+    --primary-dark: #2e3c8f;
+    --accent: #4453c4;
+    --accent-soft: #ebedfa;
+    --gold: #e8952b;
+  }
+
+  /* 栗棕 × 青蓝（撞色） */
+  [data-theme="brown"] {
+    --ink: #2e2016;
+    --primary: #7c5230;
+    --primary-dark: #664225;
+    --accent: #96652f;
+    --accent-soft: #f2ebe2;
+    --gold: #2a8fb0;
+  }
+
+  /* ===== 撞色系（高对比强调色）===== */
+
+  /* 藏青 × 橙（撞色） */
+  [data-theme="clash-navy"] {
+    --ink: #14213d;
+    --primary: #1b2a4e;
+    --primary-dark: #14213d;
+    --accent: #234072;
+    --accent-soft: #eaeef6;
+    --gold: #e8862b;
+  }
+
+  /* 墨绿 × 珊瑚红（撞色） */
+  [data-theme="clash-green"] {
+    --ink: #16352c;
+    --primary: #1c5b48;
+    --primary-dark: #16493a;
+    --accent: #22705a;
+    --accent-soft: #e7f2ee;
+    --gold: #e8553b;
+  }
+
+  /* 深紫 × 青柠（撞色） */
+  [data-theme="clash-purple"] {
+    --ink: #241640;
+    --primary: #4c2f8f;
+    --primary-dark: #3e2676;
+    --accent: #5e3db0;
+    --accent-soft: #eee9fa;
+    --gold: #17a398;
+  }
+
+  /* 酒红 × 靛蓝（撞色） */
+  [data-theme="clash-wine"] {
+    --ink: #3a1424;
+    --primary: #7a1f3d;
+    --primary-dark: #631831;
+    --accent: #96284c;
+    --accent-soft: #f7e8ed;
+    --gold: #2a6fb0;
+  }
+
+  /* ===== Theme switcher (仅屏幕显示) ===== */
+  .theme-panel {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 100;
+  }
+  .theme-toggle {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: var(--primary);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .2s, background .2s;
+  }
+  .theme-toggle:hover { transform: rotate(30deg) scale(1.06); }
+
+  .theme-body {
+    position: absolute;
+    top: 50px; right: 0;
+    width: 216px;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+    padding: 12px;
+    transform-origin: top right;
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  /* 收起态 */
+  .theme-panel:not(.open) .theme-body {
+    opacity: 0;
+    transform: scale(0.9) translateY(-6px);
+    pointer-events: none;
+  }
+  .theme-panel.open .theme-body { opacity: 1; transform: scale(1); }
+
+  .theme-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  .theme-close {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    color: #999;
+    padding: 0 2px;
+  }
+  .theme-close:hover { color: #333; }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+  }
+  .theme-grid button {
+    position: relative;
+    height: 34px;
+    border-radius: 7px;
+    border: 2px solid #fff;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform .15s;
+  }
+  .theme-grid button:hover { transform: translateY(-2px); }
+  .theme-grid button span {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    font-size: 9px;
+    color: #fff;
+    text-align: center;
+    background: rgba(0,0,0,0.28);
+    padding: 1px 0;
+    letter-spacing: .5px;
+  }
+  /* 全部为撞色：主色 + 对比点缀双色斜切 */
+  .theme-grid button.t-blue   { background: linear-gradient(135deg, #1f4e8c 50%, #e8862b 50%); }
+  .theme-grid button.t-mono   { background: linear-gradient(135deg, #3a3a3c 50%, #e0533a 50%); }
+  .theme-grid button.t-wine   { background: linear-gradient(135deg, #7d2740 50%, #2a6fb0 50%); }
+  .theme-grid button.t-purple { background: linear-gradient(135deg, #5b3aa8 50%, #17a398 50%); }
+  .theme-grid button.t-teal   { background: linear-gradient(135deg, #0f766e 50%, #e8553b 50%); }
+  .theme-grid button.t-cyan   { background: linear-gradient(135deg, #0e7490 50%, #e8862b 50%); }
+  .theme-grid button.t-forest { background: linear-gradient(135deg, #276749 50%, #e8553b 50%); }
+  .theme-grid button.t-indigo { background: linear-gradient(135deg, #3949ab 50%, #e8952b 50%); }
+  .theme-grid button.t-brown  { background: linear-gradient(135deg, #7c5230 50%, #2a8fb0 50%); }
+  /* 撞色变体 */
+  .theme-grid button.t-clash-navy   { background: linear-gradient(135deg, #1b2a4e 50%, #e8862b 50%); }
+  .theme-grid button.t-clash-green  { background: linear-gradient(135deg, #1c5b48 50%, #e8553b 50%); }
+  .theme-grid button.t-clash-purple { background: linear-gradient(135deg, #4c2f8f 50%, #17a398 50%); }
+  .theme-grid button.t-clash-wine   { background: linear-gradient(135deg, #7a1f3d 50%, #2a6fb0 50%); }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-    color: var(--text);
+    color: color-mix(in srgb, var(--ink) 85%, #fff);
     background: var(--bg);
     line-height: 1.6;
     font-size: 13px;
@@ -92,7 +321,7 @@
 
   .summary {
     font-size: 12.5px;
-    color: #40484f;
+    color: color-mix(in srgb, var(--ink) 82%, #fff);
     background: var(--accent-soft);
     border-radius: 6px;
     padding: 13px 16px;
@@ -226,14 +455,14 @@
     color: var(--gold);
     font-weight: 600;
     margin-bottom: 3px;
-    background: #fdf6e8;
+    background: color-mix(in srgb, var(--gold) 12%, #fff);
     padding: 1px 8px;
     border-radius: 3px;
   }
 
   .project-desc {
     font-size: 12px;
-    color: #565f68;
+    color: color-mix(in srgb, var(--ink) 68%, #fff);
     margin-bottom: 3px;
     line-height: 1.65;
   }
@@ -244,7 +473,7 @@
     position: relative;
     padding-left: 13px;
     font-size: 12px;
-    color: #4a525b;
+    color: color-mix(in srgb, var(--ink) 72%, #fff);
     margin-bottom: 2px;
     line-height: 1.55;
   }
@@ -274,7 +503,7 @@
     font-size: 11.5px;
     color: var(--primary-dark);
     background: var(--accent-soft);
-    border: 1px solid #cbe6e2;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, #fff);
     padding: 2px 9px;
     border-radius: 4px;
     line-height: 1.5;
@@ -291,9 +520,9 @@
     align-items: center;
     gap: 6px;
     font-size: 11.5px;
-    color: #3a434b;
-    background: #f5f7f9;
-    border: 1px solid var(--line);
+    color: var(--primary-dark);
+    background: color-mix(in srgb, var(--accent) 6%, #fff);
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, #fff);
     border-radius: 5px;
     padding: 2px 4px 2px 10px;
     line-height: 1.6;
@@ -301,16 +530,16 @@
   .course .score {
     font-weight: 700;
     color: #fff;
-    background: var(--muted);
+    background: color-mix(in srgb, var(--accent) 55%, #fff);
     border-radius: 4px;
     padding: 0 6px;
     font-size: 11px;
     min-width: 22px;
     text-align: center;
   }
-  .course.top { border-color: #cbe6e2; background: var(--accent-soft); color: var(--primary-dark); }
+  .course.top { border-color: color-mix(in srgb, var(--accent) 30%, #fff); background: var(--accent-soft); color: var(--primary-dark); }
   .course.top .score { background: var(--accent); }
-  .course.gold { border-color: #f0dcae; background: #fdf6e8; color: #8a5a12; }
+  .course.gold { border-color: color-mix(in srgb, var(--gold) 35%, #fff); background: color-mix(in srgb, var(--gold) 12%, #fff); color: color-mix(in srgb, var(--gold) 75%, #000); }
   .course.gold .score { background: var(--gold); }
 
   /* ===== Print (A4) ===== */
@@ -320,6 +549,7 @@
   }
   @media print {
     html, body { background: #fff; }
+    .theme-switch, .theme-panel { display: none !important; }
     body { font-size: 10.5px; line-height: 1.5; }
     .page {
       margin: 0 auto;
@@ -374,6 +604,33 @@
 </style>
 </head>
 <body>
+
+<div class="theme-panel" id="themePanel">
+  <button class="theme-toggle" onclick="toggleThemePanel()" title="配色设置" aria-label="配色设置">
+    <span class="tp-icon">🎨</span>
+  </button>
+  <div class="theme-body">
+    <div class="theme-head">
+      <span>配色主题</span>
+      <button class="theme-close" onclick="toggleThemePanel()" aria-label="收起">×</button>
+    </div>
+    <div class="theme-grid">
+      <button class="t-blue"   onclick="setTheme('')"       title="商务蓝×橙"><span>商务蓝</span></button>
+      <button class="t-teal"   onclick="setTheme('teal')"   title="青绿×珊瑚"><span>青绿</span></button>
+      <button class="t-cyan"   onclick="setTheme('cyan')"   title="深青蓝×橙"><span>深青蓝</span></button>
+      <button class="t-forest" onclick="setTheme('forest')" title="森林绿×珊瑚"><span>森林绿</span></button>
+      <button class="t-indigo" onclick="setTheme('indigo')" title="靛蓝×琥珀"><span>靛蓝</span></button>
+      <button class="t-purple" onclick="setTheme('purple')" title="深紫×青柠"><span>深紫</span></button>
+      <button class="t-wine"   onclick="setTheme('wine')"   title="酒红×靛蓝"><span>酒红</span></button>
+      <button class="t-brown"  onclick="setTheme('brown')"  title="栗棕×青蓝"><span>栗棕</span></button>
+      <button class="t-mono"   onclick="setTheme('mono')"   title="墨黑×橙红"><span>墨黑</span></button>
+      <button class="t-clash-navy"   onclick="setTheme('clash-navy')"   title="藏青×橙"><span>藏青撞</span></button>
+      <button class="t-clash-green"  onclick="setTheme('clash-green')"  title="墨绿×珊瑚"><span>墨绿撞</span></button>
+      <button class="t-clash-purple" onclick="setTheme('clash-purple')" title="深紫×青"><span>紫青撞</span></button>
+      <button class="t-clash-wine"   onclick="setTheme('clash-wine')"   title="酒红×靛蓝"><span>酒蓝撞</span></button>
+    </div>
+  </div>
+</div>
 
 <div class="page">
 
@@ -675,6 +932,29 @@
 
   </main>
 </div>
+
+<script>
+  function toggleThemePanel() {
+    document.getElementById('themePanel').classList.toggle('open');
+  }
+  function setTheme(t) {
+    if (t) { document.documentElement.setAttribute('data-theme', t); }
+    else { document.documentElement.removeAttribute('data-theme'); }
+    try { localStorage.setItem('resumeTheme', t); } catch (e) {}
+    document.getElementById('themePanel').classList.remove('open');
+  }
+  try {
+    var saved = localStorage.getItem('resumeTheme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+  } catch (e) {}
+  // 点击面板外部自动收起
+  document.addEventListener('click', function (e) {
+    var panel = document.getElementById('themePanel');
+    if (panel.classList.contains('open') && !panel.contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  });
+</script>
 
 </body>
 </html>
